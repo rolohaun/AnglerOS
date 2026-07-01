@@ -1,0 +1,45 @@
+name: Build Marlin from test config (Delta / SKR Pico)
+
+# Validates that an AnglerOS-generated config.ini actually compiles: clone Marlin
+# at the ref the config targets, drop the config in, build env:SKR_Pico. This is
+# the convergence loop for the config generator (and the seed of Phase 2's
+# ESP32-dispatched build).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'test/**'
+      - '.github/workflows/build-marlin.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Clone Marlin @ bugfix-2.1.x
+        run: git clone --depth 1 --branch bugfix-2.1.x https://github.com/MarlinFirmware/Marlin.git marlin-build
+
+      - name: Apply AnglerOS config.ini
+        run: cp test/delta-skr-pico.config.ini marlin-build/Marlin/config.ini
+
+      - name: Build env:SKR_Pico
+        working-directory: marlin-build
+        run: pio run -e SKR_Pico
+
+      - name: Upload firmware.uf2
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: delta-skr-pico-firmware
+          path: marlin-build/.pio/build/SKR_Pico/firmware.uf2
+          if-no-files-found: warn

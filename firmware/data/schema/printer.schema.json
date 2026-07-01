@@ -18,7 +18,7 @@
         { "id": "delta_radius", "label": "Delta radius", "type": "number", "unit": "mm", "default": 105, "ini": "DELTA_RADIUS", "help": "Horizontal distance from tower to effector centre." },
         { "id": "delta_printable_radius", "label": "Printable radius", "type": "number", "unit": "mm", "default": 90, "ini": "DELTA_PRINTABLE_RADIUS" },
         { "id": "delta_height", "label": "Max build height", "type": "number", "unit": "mm", "default": 250, "ini": "DELTA_HEIGHT" },
-        { "id": "delta_segments_per_second", "label": "Segments / second", "type": "number", "default": 200, "ini": "DELTA_SEGMENTS_PER_SECOND" },
+        { "id": "delta_segments_per_second", "label": "Segments / second", "type": "number", "default": 200, "ini": "DEFAULT_SEGMENTS_PER_SECOND" },
         { "id": "delta_endstop_adj", "label": "Endstop adjust (X,Y,Z)", "type": "vector3", "unit": "mm", "default": [0, 0, 0], "ini": "DELTA_ENDSTOP_ADJ" },
         { "id": "delta_tower_angle_trim", "label": "Tower angle trim (X,Y,Z)", "type": "vector3", "unit": "°", "default": [0, 0, 0], "ini": "DELTA_TOWER_ANGLE_TRIM" }
       ]

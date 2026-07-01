@@ -174,6 +174,13 @@
     if (kin === 'corexy') lines.push('COREXY = on');
     lines.push('');
 
+    // Base examples enable extras our target boards don't wire up. Disable the
+    // ones AnglerOS doesn't (yet) expose so they don't trip Marlin's sanity
+    // checks (e.g. PSU_CONTROL needs a PS_ON_PIN the SKR Pico doesn't define).
+    lines.push('# Base-example extras AnglerOS disables (not exposed in the UI)');
+    lines.push('PSU_CONTROL = off');
+    lines.push('');
+
     // Motion arrays assembled from the per-axis fields.
     let sx, sy, sz, fx, fy, fz, ax, ay, az;
     if (kin === 'delta') {
