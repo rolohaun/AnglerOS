@@ -137,6 +137,9 @@ input {
   background: rgba(15, 17, 21, .9);
   display: flex; align-items: center; justify-content: center; padding: 1.5rem;
 }
+/* The class rule above sets display, which would override the [hidden]
+   attribute — restate it so hiding the overlay actually works. */
+.setup-overlay[hidden] { display: none; }
 .setup-card {
   width: 100%; max-width: 400px;
   background: var(--panel); border: 1px solid var(--border);
