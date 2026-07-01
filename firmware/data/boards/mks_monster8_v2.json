@@ -9,6 +9,7 @@
   "marlin_ref": "bugfix-2.1.x",
   "marlin_ref_note": "Built from Marlin bugfix-2.1.x. Monster8 uses external stepper drivers; TMC2209 in UART mode is assumed by default.",
   "axes": ["X", "Y", "Z", "E0"],
+  "serial_port": 1,
   "fw_artifact": "mks_monster8.bin",
   "flash_hint": "Copy the firmware .bin to a FAT32 microSD card, insert it into the board, and power-cycle. It flashes on boot.",
   "notes": "External (pluggable) stepper drivers; defaults assume TMC2209 in UART mode. Change drivers to match your modules if different.",

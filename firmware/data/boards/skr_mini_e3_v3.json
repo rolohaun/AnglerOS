@@ -9,8 +9,9 @@
   "marlin_ref": "bugfix-2.1.x",
   "marlin_ref_note": "Built from Marlin bugfix-2.1.x for consistency across AnglerOS boards.",
   "axes": ["X", "Y", "Z", "E0"],
+  "serial_port": 2,
   "fw_artifact": "firmware.bin",
   "flash_hint": "Copy the firmware .bin to a FAT32 microSD card, insert it into the board, and power-cycle. It flashes on boot and renames the file to FIRMWARE.CUR.",
   "notes": "Integrated TMC2209 drivers on a shared UART; pins handled by the board's pins file.",
-  "base_examples": { "delta": "example/delta/generic", "cartesian": null, "corexy": null }
+  "base_examples": { "delta": "example/delta/generic", "cartesian": "example/Creality/Ender-3/BigTreeTech SKR Mini E3 3.0", "corexy": null }
 }

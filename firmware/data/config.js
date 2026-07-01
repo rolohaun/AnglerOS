@@ -171,6 +171,11 @@
     const base = board.base_examples[kin];
     lines.push(`ini_use_config = ${base ? base + ' @ ' + exampleRef + ', ' : ''}base`);
     lines.push(`MOTHERBOARD = ${board.motherboard}`);
+    // STM32 boards require a valid SERIAL_PORT (1-9 or -1); the generic default
+    // config uses 0, which only works on AVR. Boards that need it declare one.
+    if (board.serial_port !== undefined && board.serial_port !== null) {
+      lines.push(`SERIAL_PORT = ${board.serial_port}`);
+    }
     if (kin === 'corexy') lines.push('COREXY = on');
     lines.push('');
 
