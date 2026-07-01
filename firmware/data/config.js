@@ -38,6 +38,9 @@
 
   function kinematics() { return kinSel.value; }
 
+  // The Marlin source ref this board builds against.
+  function marlinRef() { return board.marlin_ref || marlinTag || 'bugfix-2.1.x'; }
+
   function fieldApplies(f) {
     if (!f.when || !f.when.kinematics) return true;
     return f.when.kinematics.includes(kinematics());
@@ -151,18 +154,22 @@
     const kin = kinematics();
     const lines = [];
     const date = new Date().toISOString().slice(0, 10);
-    // The Configurations repo publishes each release as a branch named
-    // "release-<tag>" (there is no bare "<tag>" tag), so that's the ref we pull
-    // the base example from. Fall back to the 2.1.x dev branch when offline.
-    const ref = marlinTag ? 'release-' + marlinTag : 'bugfix-2.1.x';
+    // Which Marlin the board actually builds against. Some boards (RP2040 / SKR
+    // Pico) require a specific branch because stable Marlin doesn't support them
+    // yet. Otherwise use the latest stable release. The Configurations repo
+    // names release branches "release-<tag>" (no bare "<tag>" tag exists).
+    const sourceRef = marlinRef();
+    const exampleRef = board.marlin_ref
+      ? board.marlin_ref
+      : (marlinTag ? 'release-' + marlinTag : 'bugfix-2.1.x');
 
     lines.push('# AnglerOS generated config.ini — ' + date);
-    lines.push(`# Board: ${board.name} | Kinematics: ${kin} | Marlin source tag: ${marlinTag || 'bugfix-2.1.x'} | config ref: ${ref}`);
+    lines.push(`# Board: ${board.name} | Kinematics: ${kin} | Marlin source tag: ${sourceRef} | config ref: ${exampleRef}`);
     lines.push('');
     lines.push('[config:base]');
 
     const base = board.base_examples[kin];
-    lines.push(`ini_use_config = ${base ? base + ' @ ' + ref + ', ' : ''}base`);
+    lines.push(`ini_use_config = ${base ? base + ' @ ' + exampleRef + ', ' : ''}base`);
     lines.push(`MOTHERBOARD = ${board.motherboard}`);
     if (kin === 'corexy') lines.push('COREXY = on');
     lines.push('');
@@ -280,9 +287,15 @@
     await loadSaved();
 
     marlinTag = await fetchMarlinVersion();
-    versionEl.textContent = marlinTag
-      ? 'latest stable: ' + marlinTag
-      : 'version unavailable (offline?) — using bugfix-2.1.x';
+    if (board.marlin_ref) {
+      versionEl.textContent = `builds from ${board.marlin_ref}`
+        + (marlinTag ? ` · latest stable ${marlinTag}` : '');
+      if (board.marlin_ref_note) versionEl.title = board.marlin_ref_note;
+    } else {
+      versionEl.textContent = marlinTag
+        ? 'latest stable: ' + marlinTag
+        : 'version unavailable (offline?) — using bugfix-2.1.x';
+    }
 
     render();
 

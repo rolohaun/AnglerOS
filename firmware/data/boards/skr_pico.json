@@ -6,6 +6,8 @@
   "driver": "TMC2209",
   "driver_interface": "uart",
   "pio_env": "SKR_Pico",
+  "marlin_ref": "bugfix-2.1.x",
+  "marlin_ref_note": "RP2040 boards (SKR Pico) need Marlin's bugfix-2.1.x branch — RP2040 support isn't in the latest stable release, it lands in Marlin 2.1.3.",
   "axes": ["X", "Y", "Z", "E0"],
   "notes": "TMC2209 drivers share one UART with per-driver addressing; the SKR Pico pins file handles that automatically once MOTHERBOARD is set.",
   "base_examples": {

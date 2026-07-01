@@ -13,10 +13,15 @@ Marlin's own `platformio.ini` runs a pre-build script
 
 ```ini
 [config:base]
-ini_use_config = example/delta/generic @ release-2.1.2.8, base
+ini_use_config = example/delta/generic @ bugfix-2.1.x, base
 MOTHERBOARD = BOARD_BTT_SKR_PICO
 # ...overrides...
 ```
+
+> **SKR Pico note:** RP2040 support isn't in Marlin's latest *stable* release —
+> it lives in the **`bugfix-2.1.x`** branch (lands in 2.1.3). So for this board
+> both the Marlin source **and** the base-example ref use `bugfix-2.1.x`. The
+> generated `config.ini` header records the exact refs it targets.
 
 `ini_use_config` pulls the delta base example from the MarlinFirmware
 **Configurations** repo (each release is a branch named `release-<tag>`), then
@@ -48,9 +53,10 @@ To force a ref (e.g. the dev branch): `-Tag bugfix-2.1.x`.
 
 ## Option B — manual (any OS, VS Code GUI)
 
-1. Clone Marlin at the release shown in the config header (or the dev branch):
+1. Clone Marlin at the ref shown in the config header (`Marlin source tag:`).
+   For the SKR Pico that's the dev branch:
    ```
-   git clone --depth 1 --branch 2.1.2.8 https://github.com/MarlinFirmware/Marlin.git
+   git clone --depth 1 --branch bugfix-2.1.x https://github.com/MarlinFirmware/Marlin.git
    ```
 2. Copy your `config.ini` to **`Marlin/config.ini`** (the inner `Marlin/`
    folder, next to `Configuration.h`).
