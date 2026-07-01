@@ -1,9 +1,8 @@
-name: Build Marlin from test config (Delta / SKR Pico)
+name: Build Marlin from test configs
 
-# Validates that an AnglerOS-generated config.ini actually compiles: clone Marlin
-# at the ref the config targets, drop the config in, build env:SKR_Pico. This is
-# the convergence loop for the config generator (and the seed of Phase 2's
-# ESP32-dispatched build).
+# Validates that AnglerOS-generated configs actually compile: clone Marlin at
+# bugfix-2.1.x, drop each test config in, build its env. Convergence loop for the
+# config generator across the supported boards.
 
 on:
   push:
@@ -16,6 +15,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: delta-skr-pico
+            config: test/delta-skr-pico.config.ini
+            env: SKR_Pico
+          - name: cartesian-skr-mini-e3-v3
+            config: test/cartesian-skr-mini-e3-v3.config.ini
+            env: STM32G0B1RE_btt
+          - name: cartesian-mks-monster8-v2
+            config: test/cartesian-mks-monster8-v2.config.ini
+            env: mks_monster8
+    name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -30,16 +43,18 @@ jobs:
         run: git clone --depth 1 --branch bugfix-2.1.x https://github.com/MarlinFirmware/Marlin.git marlin-build
 
       - name: Apply AnglerOS config.ini
-        run: cp test/delta-skr-pico.config.ini marlin-build/Marlin/config.ini
+        run: cp "${{ matrix.config }}" marlin-build/Marlin/config.ini
 
-      - name: Build env:SKR_Pico
+      - name: Build env:${{ matrix.env }}
         working-directory: marlin-build
-        run: pio run -e SKR_Pico
+        run: pio run -e ${{ matrix.env }}
 
-      - name: Upload firmware.uf2
+      - name: Upload firmware
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: delta-skr-pico-firmware
-          path: marlin-build/.pio/build/SKR_Pico/firmware.uf2
+          name: ${{ matrix.name }}-firmware
+          path: |
+            marlin-build/.pio/build/${{ matrix.env }}/*.uf2
+            marlin-build/.pio/build/${{ matrix.env }}/*.bin
           if-no-files-found: warn

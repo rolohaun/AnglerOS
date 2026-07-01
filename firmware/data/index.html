@@ -79,6 +79,8 @@
             <label for="board">Mainboard</label>
             <select id="board">
               <option value="skr_pico">BigTreeTech SKR Pico</option>
+              <option value="skr_mini_e3_v3">BTT SKR Mini E3 V3.0</option>
+              <option value="mks_monster8_v2">MKS Monster8 V2.0</option>
             </select>
           </div>
           <div class="field">
@@ -96,7 +98,8 @@
 
         <div class="config-actions">
           <button id="cfg-save" class="btn-primary">Save configuration</button>
-          <button id="cfg-builder" class="btn-primary">Download firmware builder</button>
+          <button id="cfg-builder-win" class="btn-primary">Build firmware — Windows</button>
+          <button id="cfg-builder-nix" class="btn-primary">Build firmware — macOS/Linux</button>
           <button id="cfg-download" class="btn-secondary">config.ini only</button>
           <span id="cfg-status" class="muted"></span>
         </div>
@@ -104,18 +107,21 @@
         <details class="note-block" open>
           <summary>How to build your firmware (no GitHub, no PlatformIO setup)</summary>
           <ol>
-            <li>Click <strong>Download firmware builder</strong> — you get a
-              single <code>angleros-build.ps1</code> with your settings baked in.</li>
-            <li>Right-click it → <strong>Run with PowerShell</strong> (or run
-              <code>powershell -ExecutionPolicy Bypass -File .\angleros-build.ps1</code>).</li>
-            <li>It installs PlatformIO if needed, builds Marlin, and drops
-              <code>firmware.uf2</code> on your Desktop.</li>
-            <li>Hold <strong>BOOT</strong> on the SKR Pico, plug in USB, and copy
-              <code>firmware.uf2</code> onto the <code>RPI-RP2</code> drive.</li>
+            <li>Click your OS's <strong>Build firmware</strong> button — you get a
+              single script (<code>angleros-build.ps1</code> or
+              <code>.sh</code>) with your settings baked in.</li>
+            <li><strong>Windows:</strong> right-click → <strong>Run with
+              PowerShell</strong> (or
+              <code>powershell -ExecutionPolicy Bypass -File .\angleros-build.ps1</code>).<br/>
+              <strong>macOS/Linux:</strong> run <code>bash angleros-build.sh</code>.</li>
+            <li>It installs PlatformIO if needed, builds Marlin, and drops the
+              firmware on your Desktop.</li>
+            <li>Flash it the way your board expects (the script prints exact
+              steps — BOOTSEL/UF2 for the SKR Pico, SD card for the STM32 boards).</li>
           </ol>
-          <p class="muted">Requires Git and Python on your PC. Windows may block
-            a downloaded script — right-click → Properties → <em>Unblock</em>, or
-            use the <code>-ExecutionPolicy Bypass</code> command above.</p>
+          <p class="muted">Requires Git and Python. Windows may block a downloaded
+            script — right-click → Properties → <em>Unblock</em>, or use the
+            <code>-ExecutionPolicy Bypass</code> command above.</p>
         </details>
 
         <details class="preview-wrap" open>

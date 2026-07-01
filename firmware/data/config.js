@@ -283,19 +283,22 @@
 
   function download() { saveBlob(generateIni(), 'config.ini'); }
 
-  // Build a self-contained PowerShell script (config embedded) that compiles
-  // the firmware locally with PlatformIO — no GitHub, token, or fork needed.
-  async function downloadBuilder() {
+  // Build a self-contained script (config embedded) that compiles the firmware
+  // locally with PlatformIO — no GitHub, token, or fork needed.
+  async function downloadBuilder(templateUrl, outName, howto) {
     statusEl.textContent = 'Preparing build script…';
     try {
-      const tmpl = await (await fetch('/build-template.ps1', { cache: 'no-store' })).text();
+      const tmpl = await (await fetch(templateUrl, { cache: 'no-store' })).text();
       const ini = generateIni();
+      const hint = (board.flash_hint || '').replace(/\r?\n/g, ' ').replace(/'/g, '');
       const script = tmpl
         .replace('__MARLIN_REF__', () => marlinRef())
         .replace('__PIO_ENV__', () => board.pio_env)
+        .replace('__FW_ARTIFACT__', () => board.fw_artifact || 'firmware.bin')
+        .replace('__FLASH_HINT__', () => hint)
         .replace('__CONFIG_INI__', () => ini);
-      saveBlob(script, 'angleros-build.ps1');
-      statusEl.textContent = 'Build script downloaded — right-click it → Run with PowerShell.';
+      saveBlob(script, outName);
+      statusEl.textContent = 'Downloaded ' + outName + ' — ' + howto;
     } catch (e) {
       statusEl.textContent = 'Could not build script: ' + e.message;
     }
@@ -333,7 +336,10 @@
     });
     document.getElementById('cfg-save').addEventListener('click', save);
     document.getElementById('cfg-download').addEventListener('click', download);
-    document.getElementById('cfg-builder').addEventListener('click', downloadBuilder);
+    document.getElementById('cfg-builder-win').addEventListener('click', () =>
+      downloadBuilder('/build-template.ps1', 'angleros-build.ps1', 'right-click it → Run with PowerShell.'));
+    document.getElementById('cfg-builder-nix').addEventListener('click', () =>
+      downloadBuilder('/build-template.sh', 'angleros-build.sh', 'run: bash angleros-build.sh'));
   }
 
   init();

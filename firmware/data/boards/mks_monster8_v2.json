@@ -1,0 +1,16 @@
+{
+  "id": "mks_monster8_v2",
+  "name": "MKS Monster8 V2.0",
+  "motherboard": "BOARD_MKS_MONSTER8_V2",
+  "mcu": "STM32F407VET6",
+  "driver": "TMC2209",
+  "driver_interface": "uart",
+  "pio_env": "mks_monster8",
+  "marlin_ref": "bugfix-2.1.x",
+  "marlin_ref_note": "Built from Marlin bugfix-2.1.x. Monster8 uses external stepper drivers; TMC2209 in UART mode is assumed by default.",
+  "axes": ["X", "Y", "Z", "E0"],
+  "fw_artifact": "mks_monster8.bin",
+  "flash_hint": "Copy the firmware .bin to a FAT32 microSD card, insert it into the board, and power-cycle. It flashes on boot.",
+  "notes": "External (pluggable) stepper drivers; defaults assume TMC2209 in UART mode. Change drivers to match your modules if different.",
+  "base_examples": { "delta": "example/delta/generic", "cartesian": null, "corexy": null }
+}

@@ -1,0 +1,16 @@
+{
+  "id": "skr_mini_e3_v3",
+  "name": "BTT SKR Mini E3 V3.0",
+  "motherboard": "BOARD_BTT_SKR_MINI_E3_V3_0",
+  "mcu": "STM32G0B1RE",
+  "driver": "TMC2209",
+  "driver_interface": "uart",
+  "pio_env": "STM32G0B1RE_btt",
+  "marlin_ref": "bugfix-2.1.x",
+  "marlin_ref_note": "Built from Marlin bugfix-2.1.x for consistency across AnglerOS boards.",
+  "axes": ["X", "Y", "Z", "E0"],
+  "fw_artifact": "firmware.bin",
+  "flash_hint": "Copy the firmware .bin to a FAT32 microSD card, insert it into the board, and power-cycle. It flashes on boot and renames the file to FIRMWARE.CUR.",
+  "notes": "Integrated TMC2209 drivers on a shared UART; pins handled by the board's pins file.",
+  "base_examples": { "delta": "example/delta/generic", "cartesian": null, "corexy": null }
+}

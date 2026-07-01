@@ -13,8 +13,10 @@
 $ErrorActionPreference = 'Stop'
 
 # --- Injected by AnglerOS ---------------------------------------------------
-$MarlinRef = '__MARLIN_REF__'
-$PioEnv    = '__PIO_ENV__'
+$MarlinRef  = '__MARLIN_REF__'
+$PioEnv     = '__PIO_ENV__'
+$FwArtifact = '__FW_ARTIFACT__'
+$FlashHint  = '__FLASH_HINT__'
 $ConfigIni = @'
 __CONFIG_INI__
 '@
@@ -88,17 +90,22 @@ Write-Host "Building (first run downloads the toolchain - a few minutes)..." -Fo
 Push-Location $marlin
 try { Invoke-Pio @('run', '-e', $PioEnv) } finally { Pop-Location }
 
-$uf2 = Join-Path $marlin ".pio\build\$PioEnv\firmware.uf2"
-if (-not (Test-Path $uf2)) { throw "Build finished but firmware.uf2 was not produced. See the log above." }
+$buildDir = Join-Path $marlin ".pio\build\$PioEnv"
+$fw = Join-Path $buildDir $FwArtifact
+if (-not (Test-Path $fw)) {
+  # Fall back to the newest .uf2/.bin the build produced.
+  $fw = Get-ChildItem -Path $buildDir -Include *.uf2, *.bin -File -Recurse -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $fw -or -not (Test-Path $fw)) { throw "Build finished but no firmware file was produced. See the log above." }
 
-$dest = Join-Path ([Environment]::GetFolderPath('Desktop')) 'firmware.uf2'
-Copy-Item $uf2 $dest -Force
+$dest = Join-Path ([Environment]::GetFolderPath('Desktop')) (Split-Path $fw -Leaf)
+Copy-Item $fw $dest -Force
 
 Write-Host ""
 Write-Host "SUCCESS - firmware saved to your Desktop:" -ForegroundColor Green
 Write-Host "  $dest" -ForegroundColor Green
 Write-Host ""
-Write-Host "To flash your SKR Pico:" -ForegroundColor Green
-Write-Host "  1. Hold the BOOT button on the board and plug in USB (it appears as a drive named RPI-RP2)." -ForegroundColor Green
-Write-Host "  2. Copy firmware.uf2 onto that drive. The board reboots into Marlin." -ForegroundColor Green
+Write-Host "To flash:" -ForegroundColor Green
+Write-Host "  $FlashHint" -ForegroundColor Green
 try { Start-Process (Split-Path $dest) } catch {}

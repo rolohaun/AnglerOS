@@ -9,6 +9,8 @@
   "marlin_ref": "bugfix-2.1.x",
   "marlin_ref_note": "RP2040 boards (SKR Pico) need Marlin's bugfix-2.1.x branch — RP2040 support isn't in the latest stable release, it lands in Marlin 2.1.3.",
   "axes": ["X", "Y", "Z", "E0"],
+  "fw_artifact": "firmware.uf2",
+  "flash_hint": "Hold BOOT on the SKR Pico and plug in USB (it appears as a drive named RPI-RP2), then copy the firmware onto that drive. The board reboots into Marlin.",
   "notes": "TMC2209 drivers share one UART with per-driver addressing; the SKR Pico pins file handles that automatically once MOTHERBOARD is set.",
   "base_examples": {
     "delta": "example/delta/generic",
