@@ -51,8 +51,9 @@ static void handleWifiSave(AsyncWebServerRequest *req) {
 // A line arrived from the printer — fan it out to every connected browser.
 static void broadcastPrinterLine(const String &line) { ws.textAll(line); }
 
-// A browser sent a G-code line — echo it (so all clients see it) and forward
-// it to the printer.
+// A browser sent a G-code line — forward it to the printer. (The browser echoes
+// its own sent commands locally, so ws.textAll is only ever called from loop(),
+// avoiding a cross-task race on the socket.)
 static void onWsEvent(AsyncWebSocket *, AsyncWebSocketClient *, AwsEventType type,
                       void *arg, uint8_t *data, size_t len) {
   if (type != WS_EVT_DATA) return;
@@ -64,10 +65,7 @@ static void onWsEvent(AsyncWebSocket *, AsyncWebSocketClient *, AwsEventType typ
   msg.reserve(len);
   for (size_t i = 0; i < len; i++) msg += (char)data[i];
   msg.trim();
-  if (!msg.length()) return;
-
-  ws.textAll("> " + msg);
-  printerSend(msg);
+  if (msg.length()) printerSend(msg);
 }
 
 void webServerBegin(const char *fwVersion) {

@@ -20,9 +20,13 @@
     ws.onmessage = (e) => handleLine(e.data);
   }
 
-  function send(line) {
-    if (ws && ws.readyState === WebSocket.OPEN) ws.send(line);
-    else appendLog('! not connected: ' + line, 'err');
+  function send(line, silent) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      if (!silent) appendLog('> ' + line, 'sent');  // local echo
+      ws.send(line);
+    } else if (!silent) {
+      appendLog('! not connected: ' + line, 'err');
+    }
   }
 
   // ---- Console log ----
@@ -36,17 +40,16 @@
     if (atBottom) logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // Lines from the server: "> cmd" are echoes of sent commands; others are
-  // printer output. Temperature reports are parsed but kept out of the log to
-  // avoid M105 spam.
+  // Lines from the server are printer output. Temperature reports are parsed but
+  // kept out of the log to avoid M105 spam from the auto-poll.
   function handleLine(line) {
     parseTemps(line);
     if (isTempNoise(line)) return;
-    appendLog(line, line.startsWith('> ') ? 'sent' : '');
+    appendLog(line);
   }
 
   function isTempNoise(line) {
-    return line === '> M105' || /^ok\s+T:/.test(line) || /^T:.*B:/.test(line);
+    return /^ok\s+T:/.test(line) || /^T:.*B:/.test(line);
   }
 
   // ---- Temperatures ----
@@ -62,8 +65,8 @@
     if (b) { tBed.textContent = Math.round(b[1]); tBedSet.textContent = Math.round(b[2]); }
   }
 
-  // Low-frequency temperature poll.
-  setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) send('M105'); }, 8000);
+  // Low-frequency temperature poll (silent — no console echo).
+  setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) send('M105', true); }, 8000);
 
   // ---- Console input ----
   document.getElementById('term-form').addEventListener('submit', (e) => {
