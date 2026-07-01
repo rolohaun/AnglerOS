@@ -9,57 +9,107 @@
 </head>
 <body>
   <div class="app">
-    <!-- Left sidebar -->
     <aside class="sidebar">
       <div class="brand">
-        <span class="brand-mark">🎣</span>
+        <span class="brand-mark" aria-hidden="true">&#127907;</span>
         <span class="brand-name">Angler<span class="accent">OS</span></span>
       </div>
       <nav class="nav">
         <button class="nav-item active" data-view="dashboard">
-          <span class="nav-ico">▦</span> Dashboard
+          <span class="nav-ico">D</span> Dashboard
         </button>
         <button class="nav-item" data-view="configuration">
-          <span class="nav-ico">⚙</span> Configuration
+          <span class="nav-ico">C</span> Configuration
+        </button>
+        <button class="nav-item" data-view="system">
+          <span class="nav-ico">S</span> System
         </button>
       </nav>
       <div class="sidebar-foot">
-        <span id="fw-version">v—</span>
+        <span id="fw-version">v--</span>
       </div>
     </aside>
 
-    <!-- Main -->
     <main class="main">
       <header class="topbar">
         <h1 id="view-title">Dashboard</h1>
-        <div class="status">
-          <span id="status-dot" class="dot dot-off"></span>
-          <span id="status-text">connecting…</span>
-          <span id="status-ip" class="muted"></span>
+        <div class="top-actions">
+          <button class="estop" type="button">Emergency Stop</button>
+          <div class="status">
+            <span id="status-dot" class="dot dot-off"></span>
+            <span id="status-text">connecting...</span>
+            <span id="status-ip" class="muted"></span>
+          </div>
         </div>
       </header>
 
-      <!-- Dashboard view -->
       <section class="view active" id="view-dashboard">
-        <div class="dash-grid">
-          <div class="card">
-            <div class="card-title">Hotend</div>
-            <div class="temp"><span id="t-hotend" class="temp-now">—</span><span class="temp-unit">°C</span></div>
-            <div class="muted">target <span id="t-hotend-set">—</span>°C</div>
-          </div>
-          <div class="card">
-            <div class="card-title">Bed</div>
-            <div class="temp"><span id="t-bed" class="temp-now">—</span><span class="temp-unit">°C</span></div>
-            <div class="muted">target <span id="t-bed-set">—</span>°C</div>
-          </div>
+        <div class="dashboard-tools">
+          <span class="muted">Drag panels by their headers to arrange your dashboard.</span>
+          <button id="layout-reset" class="btn-secondary btn-sm" type="button">Reset layout</button>
+        </div>
 
-          <div class="card jog-card">
-            <div class="card-title">Move</div>
+        <div class="dash-grid" id="dashboard-grid">
+          <section class="card widget print-card" data-widget="print" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">O</span>Print Status</span>
+              <span class="drag-handle" title="Drag panel">::</span>
+            </div>
+            <div class="print-preview">
+              <div class="bed-grid"></div>
+              <div class="part-shape"></div>
+            </div>
+            <div class="file-row">
+              <span>[ ]</span>
+              <span>[sample]_calibration.gcode</span>
+            </div>
+            <div class="print-stats">
+              <div><b>Speed</b><span>6 mm/s</span></div>
+              <div><b>Flow</b><span>0.3 mm^3/s</span></div>
+              <div><b>Layer</b><span>4 of 185</span></div>
+              <div><b>ETA</b><span>09:52</span></div>
+            </div>
+          </section>
+
+          <section class="card widget temps-card" data-widget="temps" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">T</span>Temperatures</span>
+              <span class="drag-handle" title="Drag panel">::</span>
+            </div>
+            <div class="temp-table">
+              <div class="temp-row temp-head"><span>Name</span><span>Current</span><span>Target</span></div>
+              <div class="temp-row">
+                <span>Hotend</span>
+                <span><b id="t-hotend">--</b> C</span>
+                <span><b id="t-hotend-set">--</b> C</span>
+              </div>
+              <div class="temp-row">
+                <span>Bed</span>
+                <span><b id="t-bed">--</b> C</span>
+                <span><b id="t-bed-set">--</b> C</span>
+              </div>
+            </div>
+            <div class="temp-chart" aria-hidden="true">
+              <span class="chart-line hotend-line"></span>
+              <span class="chart-line bed-line"></span>
+            </div>
+          </section>
+
+          <section class="card widget toolhead-card" data-widget="toolhead" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">+</span>Toolhead</span>
+              <span class="drag-handle" title="Drag panel">::</span>
+            </div>
+            <div class="position-strip">
+              <div><b>X</b><span>45.07</span></div>
+              <div><b>Y</b><span>91.49</span></div>
+              <div><b>Z</b><span>0.800</span></div>
+            </div>
             <div class="jog">
               <div class="jog-xy">
                 <button data-jog="Y+">Y+</button>
                 <button data-jog="X-">X-</button>
-                <button data-jog="home">⌂</button>
+                <button data-jog="home">H</button>
                 <button data-jog="X+">X+</button>
                 <button data-jog="Y-">Y-</button>
               </div>
@@ -77,31 +127,120 @@
               </label>
               <button id="motors-off" class="btn-secondary">Motors off</button>
             </div>
-          </div>
+          </section>
 
-          <div class="card term-card">
+          <section class="card widget machine-card" data-widget="machine" draggable="true">
             <div class="card-title">
-              G-code console
-              <span id="link-state" class="link-pill link-off">disconnected</span>
+              <span><span class="widget-ico">M</span>Machine</span>
+              <span class="drag-handle" title="Drag panel">::</span>
             </div>
-            <div id="term-log" class="term-log"></div>
-            <form id="term-form" class="term-input">
-              <input id="term-cmd" placeholder="Type G-code, e.g. G28" autocomplete="off" spellcheck="false" />
-              <button class="btn-primary">Send</button>
-            </form>
-          </div>
+            <div class="machine-grid">
+              <label>Velocity <span>200 <b>mm/s</b></span></label>
+              <label>Acceleration <span>1500 <b>mm/s2</b></span></label>
+              <label>Square Corner <span>1 <b>mm/s</b></span></label>
+              <label>Fan <span>0 <b>%</b></span></label>
+            </div>
+          </section>
 
-          <div class="card macros-card">
+          <section class="card widget term-card" data-widget="terminal" draggable="true">
             <div class="card-title">
-              Macros
-              <button id="macro-add" class="btn-secondary btn-sm">+ Add</button>
+              <span><span class="widget-ico">&gt;_</span>Console</span>
+              <span class="card-actions">
+                <span id="link-state" class="link-pill link-off">disconnected</span>
+                <span class="drag-handle" title="Drag panel">::</span>
+              </span>
+            </div>
+            <form id="term-form" class="term-input">
+              <span class="term-prompt">&gt;&gt;</span>
+              <input id="term-cmd" placeholder="Send code..." autocomplete="off" spellcheck="false" />
+              <button class="btn-primary" type="submit">Send</button>
+            </form>
+            <div id="term-log" class="term-log"></div>
+          </section>
+
+          <section class="card widget macros-card" data-widget="macros" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">&lt;&gt;</span>Macros</span>
+              <span class="card-actions">
+                <button id="macro-add" class="btn-secondary btn-sm" type="button">+ Add</button>
+                <span class="drag-handle" title="Drag panel">::</span>
+              </span>
             </div>
             <div id="macro-list" class="macro-list"></div>
-          </div>
+          </section>
+
+          <section class="card widget extruder-card" data-widget="extruder" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">E</span>Extruder</span>
+              <span class="drag-handle" title="Drag panel">::</span>
+            </div>
+            <div class="slider-row">
+              <span>Extrusion factor</span>
+              <b>100 %</b>
+            </div>
+            <div class="fake-slider"><span></span></div>
+            <div class="machine-grid">
+              <label>Pressure Advance <span>0 <b>s</b></span></label>
+              <label>Smooth Time <span>0.04 <b>s</b></span></label>
+            </div>
+          </section>
         </div>
       </section>
 
-      <!-- Macro editor overlay -->
+      <section class="view" id="view-system">
+        <div class="system-grid">
+          <section class="system-panel">
+            <div class="card-title">
+              <span><span class="widget-ico">S</span>ESP32 Status</span>
+            </div>
+            <div class="metric-grid">
+              <div class="metric-card">
+                <span class="metric-label">CPU usage</span>
+                <strong id="sys-cpu">--%</strong>
+                <div class="meter"><span id="sys-cpu-bar"></span></div>
+                <small id="sys-cpu-note">Loop-load estimate</small>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">RAM</span>
+                <strong id="sys-ram">--</strong>
+                <div class="meter"><span id="sys-ram-bar"></span></div>
+                <small id="sys-ram-free">Free heap unknown</small>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">PSRAM</span>
+                <strong id="sys-psram">--</strong>
+                <div class="meter"><span id="sys-psram-bar"></span></div>
+                <small id="sys-psram-free">Free PSRAM unknown</small>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Uptime</span>
+                <strong id="sys-uptime">--</strong>
+                <small id="sys-network">Waiting for device status</small>
+              </div>
+            </div>
+          </section>
+
+          <section class="system-panel">
+            <div class="card-title">
+              <span><span class="widget-ico">T</span>Theme</span>
+            </div>
+            <div class="theme-panel">
+              <div class="field">
+                <label for="theme-color">Accent color</label>
+                <input id="theme-color" type="color" value="#3fd06a" />
+              </div>
+              <div class="theme-swatches" aria-label="Theme presets">
+                <button type="button" class="theme-swatch" data-theme="#3fd06a" style="--swatch: #3fd06a">Green</button>
+                <button type="button" class="theme-swatch" data-theme="#1fa9ff" style="--swatch: #1fa9ff">Blue</button>
+                <button type="button" class="theme-swatch" data-theme="#ff6d1a" style="--swatch: #ff6d1a">Orange</button>
+                <button type="button" class="theme-swatch" data-theme="#b877ff" style="--swatch: #b877ff">Violet</button>
+              </div>
+              <button id="theme-reset" class="btn-secondary" type="button">Reset to AnglerOS green</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
       <div class="setup-overlay" id="macro-editor" hidden>
         <form class="setup-card" id="macro-form">
           <div class="brand"><span class="brand-name">Macro</span></div>
@@ -120,12 +259,11 @@
         </form>
       </div>
 
-      <!-- Configuration view -->
       <section class="view" id="view-configuration">
         <div class="config-top">
           <div class="field">
             <label>Marlin version</label>
-            <div class="pill" id="marlin-version">latest stable — fetched in Phase 1</div>
+            <div class="pill" id="marlin-version">latest stable - fetched in Phase 1</div>
           </div>
           <div class="field">
             <label for="board">Mainboard</label>
@@ -145,13 +283,13 @@
           </div>
         </div>
         <div id="config-form" class="config-form">
-          <p class="note" id="config-loading">Loading configuration form…</p>
+          <p class="note" id="config-loading">Loading configuration form...</p>
         </div>
 
         <div class="config-actions">
           <button id="cfg-save" class="btn-primary">Save configuration</button>
-          <button id="cfg-builder-win" class="btn-primary">Build firmware — Windows</button>
-          <button id="cfg-builder-nix" class="btn-primary">Build firmware — macOS/Linux</button>
+          <button id="cfg-builder-win" class="btn-primary">Build firmware - Windows</button>
+          <button id="cfg-builder-nix" class="btn-primary">Build firmware - macOS/Linux</button>
           <button id="cfg-download" class="btn-secondary">config.ini only</button>
           <span id="cfg-status" class="muted"></span>
         </div>
@@ -159,20 +297,20 @@
         <details class="note-block" open>
           <summary>How to build your firmware (no GitHub, no PlatformIO setup)</summary>
           <ol>
-            <li>Click your OS's <strong>Build firmware</strong> button — you get a
+            <li>Click your OS's <strong>Build firmware</strong> button. You get a
               single script (<code>angleros-build.ps1</code> or
               <code>.sh</code>) with your settings baked in.</li>
-            <li><strong>Windows:</strong> right-click → <strong>Run with
+            <li><strong>Windows:</strong> right-click and <strong>Run with
               PowerShell</strong> (or
               <code>powershell -ExecutionPolicy Bypass -File .\angleros-build.ps1</code>).<br/>
               <strong>macOS/Linux:</strong> run <code>bash angleros-build.sh</code>.</li>
             <li>It installs PlatformIO if needed, builds Marlin, and drops the
               firmware on your Desktop.</li>
-            <li>Flash it the way your board expects (the script prints exact
-              steps — BOOTSEL/UF2 for the SKR Pico, SD card for the STM32 boards).</li>
+            <li>Flash it the way your board expects. The script prints exact
+              steps for BOOTSEL/UF2 or SD card flashing.</li>
           </ol>
           <p class="muted">Requires Git and Python. Windows may block a downloaded
-            script — right-click → Properties → <em>Unblock</em>, or use the
+            script. Right-click, Properties, Unblock, or use the
             <code>-ExecutionPolicy Bypass</code> command above.</p>
         </details>
 
@@ -184,15 +322,14 @@
     </main>
   </div>
 
-  <!-- Wi-Fi setup overlay: shown only when the board is in SoftAP setup mode -->
   <div class="setup-overlay" id="setup" hidden>
     <form class="setup-card" id="setup-form">
       <div class="brand">
-        <span class="brand-mark">🎣</span>
+        <span class="brand-mark" aria-hidden="true">&#127907;</span>
         <span class="brand-name">Angler<span class="accent">OS</span> setup</span>
       </div>
       <p class="muted">Connect AnglerOS to your Wi-Fi. The board will reboot and
-        join your network — then reach it at its new address.</p>
+        join your network, then reach it at its new address.</p>
       <div class="field">
         <label for="ssid">Network name (SSID)</label>
         <input id="ssid" name="ssid" autocomplete="off" required />

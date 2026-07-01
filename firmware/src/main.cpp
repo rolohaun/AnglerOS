@@ -14,6 +14,7 @@
 #include "settings_store.h"
 #include "web_server.h"
 #include "printer_uart.h"
+#include "system_metrics.h"
 
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
@@ -57,6 +58,7 @@ void setup() {
   // (LittleFS mount + Wi-Fi + web server) without dropping request bytes.
   Serial.setRxBufferSize(1024);
   Serial.begin(115200);
+  systemMetricsBegin();
   delay(200);
   Serial.printf("\nAnglerOS %s booting...\n", FW_VERSION);
 
@@ -98,6 +100,7 @@ void setup() {
 }
 
 void loop() {
+  systemMetricsTick();
   improvSerial.handleSerial();
   printerUartPump();
 

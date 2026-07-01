@@ -1,17 +1,69 @@
-// AnglerOS SPA — Phase 0 shell.
-// Handles tab switching and polls /api/status for live board state.
+// AnglerOS SPA shell: tabs, status polling, Wi-Fi setup, and theme controls.
 
 (function () {
+  const DEFAULT_THEME = '#3fd06a';
   const views = {
     dashboard: 'Dashboard',
     configuration: 'Configuration',
+    system: 'System',
   };
+
+  // --- Theme ---
+  const themeInput = document.getElementById('theme-color');
+  const themeReset = document.getElementById('theme-reset');
+  const themeSwatches = document.querySelectorAll('.theme-swatch');
+
+  function clamp(n) { return Math.max(0, Math.min(255, n)); }
+
+  function hexToRgb(hex) {
+    const m = String(hex).trim().match(/^#?([0-9a-f]{6})$/i);
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
+  function rgbToHex(rgb) {
+    return '#' + [rgb.r, rgb.g, rgb.b].map((n) => clamp(Math.round(n)).toString(16).padStart(2, '0')).join('');
+  }
+
+  function mix(hex, target, amount) {
+    const a = hexToRgb(hex);
+    const b = hexToRgb(target);
+    if (!a || !b) return hex;
+    return rgbToHex({
+      r: a.r + (b.r - a.r) * amount,
+      g: a.g + (b.g - a.g) * amount,
+      b: a.b + (b.b - a.b) * amount,
+    });
+  }
+
+  function applyTheme(color, persist) {
+    const accent = hexToRgb(color) ? color.toLowerCase() : DEFAULT_THEME;
+    document.documentElement.style.setProperty('--accent', accent);
+    document.documentElement.style.setProperty('--accent-dim', mix(accent, '#101215', .35));
+    document.documentElement.style.setProperty('--accent-hover', mix(accent, '#ffffff', .16));
+    if (themeInput) themeInput.value = accent;
+    themeSwatches.forEach((b) => b.classList.toggle('active', b.dataset.theme.toLowerCase() === accent));
+    if (persist) {
+      try { localStorage.setItem('angleros.theme.accent', accent); } catch (e) {}
+    }
+  }
+
+  try { applyTheme(localStorage.getItem('angleros.theme.accent') || DEFAULT_THEME, false); }
+  catch (e) { applyTheme(DEFAULT_THEME, false); }
+
+  if (themeInput) {
+    themeInput.addEventListener('input', () => applyTheme(themeInput.value, true));
+  }
+  themeSwatches.forEach((b) => b.addEventListener('click', () => applyTheme(b.dataset.theme, true)));
+  if (themeReset) themeReset.addEventListener('click', () => applyTheme(DEFAULT_THEME, true));
 
   // --- Tab navigation ---
   const navItems = document.querySelectorAll('.nav-item');
   const title = document.getElementById('view-title');
 
   function show(view) {
+    if (!views[view] || !document.getElementById('view-' + view)) view = 'dashboard';
     document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
     document.getElementById('view-' + view).classList.add('active');
     navItems.forEach((n) => n.classList.toggle('active', n.dataset.view === view));
@@ -30,9 +82,63 @@
   const text = document.getElementById('status-text');
   const ipEl = document.getElementById('status-ip');
   const fwEl = document.getElementById('fw-version');
-
   const setup = document.getElementById('setup');
   let submitting = false;
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function setMeter(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.style.width = Math.max(0, Math.min(100, value || 0)) + '%';
+  }
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes)) return '--';
+    if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    if (bytes >= 1024) return Math.round(bytes / 1024) + ' KB';
+    return bytes + ' B';
+  }
+
+  function formatUptime(seconds) {
+    if (!Number.isFinite(seconds)) return '--';
+    const d = Math.floor(seconds / 86400);
+    const h = Math.floor((seconds % 86400) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (d) return d + 'd ' + h + 'h';
+    if (h) return h + 'h ' + m + 'm';
+    return m + 'm';
+  }
+
+  function usedPercent(free, total) {
+    if (!Number.isFinite(free) || !Number.isFinite(total) || total <= 0) return 0;
+    return Math.round(((total - free) / total) * 100);
+  }
+
+  function updateSystem(s) {
+    const cpu = Number.isFinite(s.cpu_load) ? s.cpu_load : 0;
+    setText('sys-cpu', cpu + '%');
+    setMeter('sys-cpu-bar', cpu);
+    setText('sys-cpu-note', s.cpu_freq_mhz ? 'Loop-load estimate at ' + s.cpu_freq_mhz + ' MHz' : 'Loop-load estimate');
+
+    const ramUsed = usedPercent(s.heap, s.heap_total);
+    setText('sys-ram', ramUsed ? ramUsed + '% used' : formatBytes(s.heap) + ' free');
+    setText('sys-ram-free', formatBytes(s.heap) + ' free / ' + formatBytes(s.heap_total) + ' total');
+    setMeter('sys-ram-bar', ramUsed);
+
+    const psramUsed = usedPercent(s.psram, s.psram_total);
+    setText('sys-psram', s.psram_total ? psramUsed + '% used' : 'Not detected');
+    setText('sys-psram-free', s.psram_total ? formatBytes(s.psram) + ' free / ' + formatBytes(s.psram_total) + ' total' : 'No PSRAM reported');
+    setMeter('sys-psram-bar', psramUsed);
+
+    setText('sys-uptime', formatUptime(s.uptime));
+    const network = s.mode === 'sta'
+      ? (s.ssid || 'Wi-Fi') + ' / ' + (s.rssi !== undefined ? s.rssi + ' dBm' : 'RSSI unknown')
+      : 'Setup AP / ' + (s.ip || 'no IP');
+    setText('sys-network', network);
+  }
 
   async function poll() {
     try {
@@ -43,12 +149,13 @@
       text.textContent = s.mode === 'sta' ? 'online' : 'setup mode';
       ipEl.textContent = s.ip ? s.ip : '';
       if (s.fw) fwEl.textContent = 'v' + s.fw;
-      // Reveal the Wi-Fi setup overlay only while in SoftAP mode.
       if (!submitting) setup.hidden = s.mode !== 'ap';
+      updateSystem(s);
     } catch (e) {
       dot.className = 'dot dot-off';
       text.textContent = 'offline';
       ipEl.textContent = '';
+      setText('sys-network', 'Status API unavailable');
     }
   }
 
@@ -61,7 +168,7 @@
     e.preventDefault();
     submitting = true;
     saveBtn.disabled = true;
-    msg.textContent = 'Saving…';
+    msg.textContent = 'Saving...';
     const body = new URLSearchParams({
       ssid: document.getElementById('ssid').value,
       pass: document.getElementById('pass').value,
@@ -74,7 +181,7 @@
       });
       if (!r.ok) throw new Error(r.status);
       msg.textContent =
-        'Saved. Rebooting and joining your network — reconnect your device to ' +
+        'Saved. Rebooting and joining your network. Reconnect your device to ' +
         'that Wi-Fi, then find AnglerOS at its new address.';
     } catch (err) {
       submitting = false;

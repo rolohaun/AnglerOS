@@ -1,7 +1,105 @@
-// AnglerOS Dashboard (Phase 3): WebSocket bridge to the printer, G-code console,
-// live temperatures, jog controls, and stored macros.
+// AnglerOS Dashboard: WebSocket bridge, G-code console, jog controls,
+// draggable widgets, and stored macros.
 
 (function () {
+  // ---- Draggable dashboard panels ----
+  const gridEl = document.getElementById('dashboard-grid');
+  const resetLayoutBtn = document.getElementById('layout-reset');
+  const DEFAULT_LAYOUT = ['print', 'temps', 'toolhead', 'machine', 'terminal', 'macros', 'extruder'];
+  let draggedWidget = null;
+
+  function widgetKey(el) { return el && el.dataset ? el.dataset.widget : null; }
+
+  function saveLayout() {
+    try {
+      const order = Array.from(gridEl.querySelectorAll('[data-widget]')).map(widgetKey);
+      localStorage.setItem('angleros.dashboard.layout', JSON.stringify(order));
+    } catch (e) {}
+  }
+
+  function applyLayout(order) {
+    if (!Array.isArray(order)) return;
+    const byKey = new Map(Array.from(gridEl.querySelectorAll('[data-widget]')).map((el) => [widgetKey(el), el]));
+    const placed = new Set();
+    order.forEach((key) => {
+      const el = byKey.get(key);
+      if (el) {
+        gridEl.appendChild(el);
+        placed.add(key);
+      }
+    });
+    DEFAULT_LAYOUT.forEach((key) => {
+      const el = byKey.get(key);
+      if (el && !placed.has(key)) gridEl.appendChild(el);
+    });
+  }
+
+  function loadLayout() {
+    try { applyLayout(JSON.parse(localStorage.getItem('angleros.dashboard.layout'))); } catch (e) {}
+  }
+
+  function clearDropMarks() {
+    gridEl.querySelectorAll('.drop-before, .drop-after').forEach((el) => {
+      el.classList.remove('drop-before', 'drop-after');
+    });
+  }
+
+  function dragTarget(e) {
+    const target = e.target.closest('[data-widget]');
+    return target && target !== draggedWidget ? target : null;
+  }
+
+  function wireDashboardDrag() {
+    loadLayout();
+    gridEl.querySelectorAll('[data-widget]').forEach((widget) => {
+      widget.addEventListener('dragstart', (e) => {
+        if (e.target.closest('button, input, select, textarea')) {
+          e.preventDefault();
+          return;
+        }
+        draggedWidget = widget;
+        widget.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', widgetKey(widget));
+      });
+      widget.addEventListener('dragend', () => {
+        widget.classList.remove('dragging');
+        clearDropMarks();
+        draggedWidget = null;
+        saveLayout();
+      });
+    });
+
+    gridEl.addEventListener('dragover', (e) => {
+      if (!draggedWidget) return;
+      e.preventDefault();
+      const target = dragTarget(e);
+      clearDropMarks();
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const after = e.clientX > rect.left + rect.width / 2;
+      target.classList.add(after ? 'drop-after' : 'drop-before');
+    });
+
+    gridEl.addEventListener('drop', (e) => {
+      if (!draggedWidget) return;
+      e.preventDefault();
+      const target = dragTarget(e);
+      if (target) {
+        const rect = target.getBoundingClientRect();
+        const after = e.clientX > rect.left + rect.width / 2;
+        gridEl.insertBefore(draggedWidget, after ? target.nextSibling : target);
+      }
+      clearDropMarks();
+      saveLayout();
+    });
+
+    resetLayoutBtn.addEventListener('click', () => {
+      applyLayout(DEFAULT_LAYOUT);
+      saveLayout();
+    });
+  }
+
   // ---- WebSocket link to the printer ----
   const logEl = document.getElementById('term-log');
   const linkEl = document.getElementById('link-state');
@@ -13,7 +111,8 @@
   }
 
   function connect() {
-    ws = new WebSocket('ws://' + location.host + '/ws');
+    const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    ws = new WebSocket(proto + location.host + '/ws');
     ws.onopen = () => setLink('connected');
     ws.onclose = () => { setLink('disconnected'); setTimeout(connect, 2000); };
     ws.onerror = () => ws.close();
@@ -22,7 +121,7 @@
 
   function send(line, silent) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-      if (!silent) appendLog('> ' + line, 'sent');  // local echo
+      if (!silent) appendLog(line, 'sent');
       ws.send(line);
     } else if (!silent) {
       appendLog('! not connected: ' + line, 'err');
@@ -40,8 +139,6 @@
     if (atBottom) logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // Lines from the server are printer output. Temperature reports are parsed but
-  // kept out of the log to avoid M105 spam from the auto-poll.
   function handleLine(line) {
     parseTemps(line);
     if (isTempNoise(line)) return;
@@ -65,7 +162,6 @@
     if (b) { tBed.textContent = Math.round(b[1]); tBedSet.textContent = Math.round(b[2]); }
   }
 
-  // Low-frequency temperature poll (silent — no console echo).
   setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) send('M105', true); }, 8000);
 
   // ---- Console input ----
@@ -84,6 +180,7 @@
     const feed = axis === 'Z' ? 600 : 3000;
     send('G91'); send('G1 ' + axis + d + ' F' + feed); send('G90');
   }
+
   document.querySelectorAll('[data-jog]').forEach((b) => b.addEventListener('click', () => {
     const a = b.dataset.jog;
     if (a === 'home') return send('G28');
@@ -141,8 +238,8 @@
       row.className = 'macro-row';
       row.innerHTML =
         `<button class="macro-run" title="Run">${escapeHtml(m.name)}</button>` +
-        `<button class="macro-edit btn-icon" title="Edit">✎</button>` +
-        `<button class="macro-del btn-icon" title="Delete">✕</button>`;
+        '<button class="macro-edit btn-icon" title="Edit">E</button>' +
+        '<button class="macro-del btn-icon" title="Delete">X</button>';
       row.querySelector('.macro-run').addEventListener('click', () => runMacro(m));
       row.querySelector('.macro-edit').addEventListener('click', () => openEditor(i));
       row.querySelector('.macro-del').addEventListener('click', () => {
@@ -177,6 +274,7 @@
   }
 
   // ---- Init ----
+  wireDashboardDrag();
   setLink('disconnected');
   connect();
   loadMacros();

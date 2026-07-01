@@ -1,6 +1,7 @@
 #include "web_server.h"
 #include "settings_store.h"
 #include "printer_uart.h"
+#include "system_metrics.h"
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -27,7 +28,11 @@ static void handleStatus(AsyncWebServerRequest *req) {
     doc["rssi"] = WiFi.RSSI();
   }
   doc["heap"] = ESP.getFreeHeap();
+  doc["heap_total"] = ESP.getHeapSize();
   doc["psram"] = ESP.getFreePsram();
+  doc["psram_total"] = ESP.getPsramSize();
+  doc["cpu_load"] = systemCpuLoadPercent();
+  doc["cpu_freq_mhz"] = getCpuFrequencyMhz();
   doc["uptime"] = (uint32_t)(millis() / 1000);
 
   String out;
