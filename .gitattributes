@@ -1,0 +1,8 @@
+# Normalize line endings to LF in the repo (avoids CRLF churn on Windows).
+* text=auto eol=lf
+
+# Binary assets — never touch.
+*.bin binary
+*.uf2 binary
+*.png binary
+*.jpg binary

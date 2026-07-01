@@ -1,0 +1,59 @@
+name: Build AnglerOS firmware & publish flasher
+
+# Builds the ESP32-CAM firmware, merges it into a single flashable image, and
+# publishes the ESP Web Tools browser flasher (pages/) to GitHub Pages.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'firmware/**'
+      - 'pages/**'
+      - '.github/workflows/build-firmware.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+
+      - name: Build firmware + LittleFS image
+        working-directory: firmware
+        run: |
+          pio run -e esp32cam
+          pio run -e esp32cam -t buildfs
+
+      - name: Merge into a single flash image
+        run: python scripts/merge_bin.py --env esp32cam --out pages/firmware/angleros-esp32cam.bin
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

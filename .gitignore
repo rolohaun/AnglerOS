@@ -1,0 +1,21 @@
+# Claude Code local state
+.claude/
+
+# PlatformIO
+firmware/.pio/
+firmware/.pioenvs/
+firmware/.piolibdeps/
+firmware/.vscode/
+*.pyc
+__pycache__/
+
+# Build output
+build/
+dist/
+*.bin
+*.uf2
+!pages/firmware/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db

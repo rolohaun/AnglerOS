@@ -1,0 +1,14 @@
+{
+  "name": "AnglerOS (ESP32-CAM)",
+  "version": "0.0.0-dev",
+  "home_assistant_domain": "",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "firmware/angleros-esp32cam.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
