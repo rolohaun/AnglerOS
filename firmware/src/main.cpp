@@ -13,10 +13,14 @@
 
 #include "settings_store.h"
 #include "web_server.h"
+#include "printer_uart.h"
 
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
 static const uint32_t STA_TIMEOUT_MS = 15000;
+// Marlin's default BAUDRATE. Must match the printer serial port the ESP32 wires
+// into (see docs/hardware.md); adjustable later from the UI.
+static const uint32_t PRINTER_BAUD = 250000;
 
 // Improv Wi-Fi over the USB serial link (shared with the boot log).
 static ImprovWiFi improvSerial(&Serial);
@@ -88,17 +92,18 @@ void setup() {
                   AP_SSID, WiFi.softAPIP().toString().c_str());
   }
 
+  printerUartBegin(PRINTER_BAUD);
   webServerBegin(FW_VERSION);
   Serial.println("[web] server started");
 }
 
 void loop() {
   improvSerial.handleSerial();
+  printerUartPump();
 
   if (webServerPendingRestart()) {
     Serial.println("[wifi] credentials saved, rebooting...");
     delay(500);
     ESP.restart();
   }
-  delay(10);
 }

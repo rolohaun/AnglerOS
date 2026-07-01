@@ -41,7 +41,7 @@
 
       <!-- Dashboard view -->
       <section class="view active" id="view-dashboard">
-        <div class="grid">
+        <div class="dash-grid">
           <div class="card">
             <div class="card-title">Hotend</div>
             <div class="temp"><span id="t-hotend" class="temp-now">—</span><span class="temp-unit">°C</span></div>
@@ -52,21 +52,73 @@
             <div class="temp"><span id="t-bed" class="temp-now">—</span><span class="temp-unit">°C</span></div>
             <div class="muted">target <span id="t-bed-set">—</span>°C</div>
           </div>
-          <div class="card camera-card">
-            <div class="card-title">Camera</div>
-            <div class="camera-ph">OV3660 feed — Phase 3</div>
-          </div>
-          <div class="card">
+
+          <div class="card jog-card">
             <div class="card-title">Move</div>
-            <div class="jog-ph muted">Jog controls appear once the printer link is up (Phase 3).</div>
+            <div class="jog">
+              <div class="jog-xy">
+                <button data-jog="Y+">Y+</button>
+                <button data-jog="X-">X-</button>
+                <button data-jog="home">⌂</button>
+                <button data-jog="X+">X+</button>
+                <button data-jog="Y-">Y-</button>
+              </div>
+              <div class="jog-z">
+                <button data-jog="Z+">Z+</button>
+                <button data-jog="Z-">Z-</button>
+              </div>
+            </div>
+            <div class="jog-foot">
+              <label>Step
+                <select id="jog-step">
+                  <option>0.1</option><option>1</option>
+                  <option selected>10</option><option>50</option>
+                </select> mm
+              </label>
+              <button id="motors-off" class="btn-secondary">Motors off</button>
+            </div>
+          </div>
+
+          <div class="card term-card">
+            <div class="card-title">
+              G-code console
+              <span id="link-state" class="link-pill link-off">disconnected</span>
+            </div>
+            <div id="term-log" class="term-log"></div>
+            <form id="term-form" class="term-input">
+              <input id="term-cmd" placeholder="Type G-code, e.g. G28" autocomplete="off" spellcheck="false" />
+              <button class="btn-primary">Send</button>
+            </form>
+          </div>
+
+          <div class="card macros-card">
+            <div class="card-title">
+              Macros
+              <button id="macro-add" class="btn-secondary btn-sm">+ Add</button>
+            </div>
+            <div id="macro-list" class="macro-list"></div>
           </div>
         </div>
-        <p class="note">
-          The dashboard connects to Marlin over UART. That bridge lands in
-          Phase 3 — for now these are placeholders. The board link status above
-          reflects the ESP32 itself.
-        </p>
       </section>
+
+      <!-- Macro editor overlay -->
+      <div class="setup-overlay" id="macro-editor" hidden>
+        <form class="setup-card" id="macro-form">
+          <div class="brand"><span class="brand-name">Macro</span></div>
+          <div class="field">
+            <label for="macro-name">Name</label>
+            <input id="macro-name" autocomplete="off" required />
+          </div>
+          <div class="field">
+            <label for="macro-gcode">G-code (one command per line)</label>
+            <textarea id="macro-gcode" rows="6" spellcheck="false"></textarea>
+          </div>
+          <div class="macro-form-actions">
+            <button type="submit" class="btn-primary">Save</button>
+            <button type="button" id="macro-cancel" class="btn-secondary">Cancel</button>
+          </div>
+        </form>
+      </div>
 
       <!-- Configuration view -->
       <section class="view" id="view-configuration">
@@ -156,5 +208,6 @@
 
   <script src="/app.js"></script>
   <script src="/config.js"></script>
+  <script src="/dashboard.js"></script>
 </body>
 </html>

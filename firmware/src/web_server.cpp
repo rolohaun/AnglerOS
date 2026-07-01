@@ -1,5 +1,6 @@
 #include "web_server.h"
 #include "settings_store.h"
+#include "printer_uart.h"
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -47,9 +48,26 @@ static void handleWifiSave(AsyncWebServerRequest *req) {
   s_pendingRestart = true;  // main loop reboots shortly after the reply flushes.
 }
 
-static void onWsEvent(AsyncWebSocket *, AsyncWebSocketClient *, AwsEventType,
-                      void *, uint8_t *, size_t) {
-  // Phase 3: push temps + serial console over the socket. No-op for now.
+// A line arrived from the printer — fan it out to every connected browser.
+static void broadcastPrinterLine(const String &line) { ws.textAll(line); }
+
+// A browser sent a G-code line — echo it (so all clients see it) and forward
+// it to the printer.
+static void onWsEvent(AsyncWebSocket *, AsyncWebSocketClient *, AwsEventType type,
+                      void *arg, uint8_t *data, size_t len) {
+  if (type != WS_EVT_DATA) return;
+  AwsFrameInfo *info = (AwsFrameInfo *)arg;
+  if (!(info->final && info->index == 0 && info->len == len)) return;
+  if (info->opcode != WS_TEXT) return;
+
+  String msg;
+  msg.reserve(len);
+  for (size_t i = 0; i < len; i++) msg += (char)data[i];
+  msg.trim();
+  if (!msg.length()) return;
+
+  ws.textAll("> " + msg);
+  printerSend(msg);
 }
 
 void webServerBegin(const char *fwVersion) {
@@ -57,9 +75,30 @@ void webServerBegin(const char *fwVersion) {
 
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
+  printerUartOnLine(&broadcastPrinterLine);
 
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
+
+  // Saved macros (array of { name, gcode }).
+  server.on("/api/macros", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (LittleFS.exists("/macros.json")) {
+      req->send(LittleFS, "/macros.json", "application/json");
+    } else {
+      req->send(200, "application/json", "[]");
+    }
+  });
+  server.on(
+      "/api/macros", HTTP_POST,
+      [](AsyncWebServerRequest *req) { req->send(200, "application/json", "{\"ok\":true}"); },
+      nullptr,
+      [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index,
+         size_t total) {
+        static File f;
+        if (index == 0) f = LittleFS.open("/macros.json", "w");
+        if (f) f.write(data, len);
+        if (index + len == total && f) f.close();
+      });
 
   // Saved printer configuration (field values + generated config.ini).
   server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *req) {

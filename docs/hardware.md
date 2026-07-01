@@ -17,18 +17,22 @@ the SD-data pins for the UART link to the SKR Pico.
 |----------|----------------|-------|
 | Camera (OV3660) | standard AI-Thinker camera bus | unchanged |
 | Flash LED | GPIO 4 | onboard white LED, PWM brightness |
-| UART TX → SKR Pico RX | *TBD* | pick from freed SD pins |
-| UART RX ← SKR Pico TX | *TBD* | pick from freed SD pins |
-| GND | GND | common ground with SKR Pico |
+| UART TX → printer RX | **GPIO 14** | ESP32 `Serial1` TX |
+| UART RX ← printer TX | **GPIO 13** | ESP32 `Serial1` RX |
+| GND | GND | common ground with the mainboard |
 
-> ⚠️ **Strapping-pin caution:** GPIO 12, 15, and 2 are boot strapping pins.
-> Holding one at the wrong level at reset can prevent boot or select the wrong
-> flash voltage. The final TX/RX pair will be chosen and documented here during
-> Phase 3 (UART bridge) to avoid this.
+GPIO 13 and 14 are free once the SD card is unused and are **not** boot
+strapping pins (unlike GPIO 12/15/2), so they're safe for the UART. Default baud
+is **250000** (Marlin's default `BAUDRATE`).
 
 Logic levels are 3.3V on both sides — no level shifter needed. Do **not**
-back-power the SKR Pico from the ESP32; power each board from its own supply and
-share only GND + the two UART lines.
+back-power the mainboard from the ESP32; power each board from its own supply
+and share only GND + the two UART lines.
+
+> **Printer side:** the ESP32 must connect to a UART that Marlin exposes as a
+> serial port at the matching baud. On the SKR Pico use the board's serial/TFT
+> header; the Marlin config's `SERIAL_PORT` (or a `SERIAL_PORT_2`) must map to
+> it. A future AnglerOS config option will set this up automatically.
 
 ## Flashing AnglerOS onto the ESP32
 
