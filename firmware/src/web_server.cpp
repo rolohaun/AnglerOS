@@ -61,6 +61,30 @@ void webServerBegin(const char *fwVersion) {
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
 
+  // Saved printer configuration (field values + generated config.ini).
+  server.on("/api/config", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (LittleFS.exists("/printer.json")) {
+      req->send(LittleFS, "/printer.json", "application/json");
+    } else {
+      req->send(200, "application/json", "{}");
+    }
+  });
+
+  // Stream the POST body straight to a file so we don't buffer it in RAM.
+  server.on(
+      "/api/config", HTTP_POST,
+      [](AsyncWebServerRequest *req) {
+        req->send(200, "application/json", "{\"ok\":true}");
+      },
+      nullptr,
+      [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index,
+         size_t total) {
+        static File f;
+        if (index == 0) f = LittleFS.open("/printer.json", "w");
+        if (f) f.write(data, len);
+        if (index + len == total && f) f.close();
+      });
+
   server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 
   server.onNotFound([](AsyncWebServerRequest *req) {

@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "note": "Only the settings needed to get a printer running. Marlin identifiers and array assembly are validated against a real build in Phase 2.",
+  "thermistors": [
+    { "value": "1", "label": "100k EPCOS (1)" },
+    { "value": "5", "label": "100k ATC 104GT-2 (5)" },
+    { "value": "11", "label": "100k beta 3950 (11)" },
+    { "value": "13", "label": "100k Hisens 3950 (13)" },
+    { "value": "1047", "label": "PT1000 w/ 4.7k pullup (1047)" }
+  ],
+  "groups": [
+    {
+      "id": "delta_geometry",
+      "title": "Delta geometry",
+      "when": { "kinematics": ["delta"] },
+      "fields": [
+        { "id": "delta_diagonal_rod", "label": "Diagonal rod", "type": "number", "unit": "mm", "default": 215, "ini": "DELTA_DIAGONAL_ROD" },
+        { "id": "delta_radius", "label": "Delta radius", "type": "number", "unit": "mm", "default": 105, "ini": "DELTA_RADIUS", "help": "Horizontal distance from tower to effector centre." },
+        { "id": "delta_printable_radius", "label": "Printable radius", "type": "number", "unit": "mm", "default": 90, "ini": "DELTA_PRINTABLE_RADIUS" },
+        { "id": "delta_height", "label": "Max build height", "type": "number", "unit": "mm", "default": 250, "ini": "DELTA_HEIGHT" },
+        { "id": "delta_segments_per_second", "label": "Segments / second", "type": "number", "default": 200, "ini": "DELTA_SEGMENTS_PER_SECOND" },
+        { "id": "delta_endstop_adj", "label": "Endstop adjust (X,Y,Z)", "type": "vector3", "unit": "mm", "default": [0, 0, 0], "ini": "DELTA_ENDSTOP_ADJ" },
+        { "id": "delta_tower_angle_trim", "label": "Tower angle trim (X,Y,Z)", "type": "vector3", "unit": "°", "default": [0, 0, 0], "ini": "DELTA_TOWER_ANGLE_TRIM" }
+      ]
+    },
+    {
+      "id": "cartesian_volume",
+      "title": "Bed volume",
+      "when": { "kinematics": ["cartesian", "corexy"] },
+      "fields": [
+        { "id": "x_bed_size", "label": "Bed size X", "type": "number", "unit": "mm", "default": 220, "ini": "X_BED_SIZE" },
+        { "id": "y_bed_size", "label": "Bed size Y", "type": "number", "unit": "mm", "default": 220, "ini": "Y_BED_SIZE" },
+        { "id": "z_max_pos", "label": "Max height Z", "type": "number", "unit": "mm", "default": 250, "ini": "Z_MAX_POS" }
+      ]
+    },
+    {
+      "id": "steppers",
+      "title": "Steppers & motion",
+      "fields": [
+        { "id": "tower_steps", "label": "Tower steps/mm", "type": "number", "default": 80, "when": { "kinematics": ["delta"] } },
+        { "id": "tower_feedrate", "label": "Tower max feedrate", "type": "number", "unit": "mm/s", "default": 200, "when": { "kinematics": ["delta"] } },
+        { "id": "tower_accel", "label": "Tower max accel", "type": "number", "unit": "mm/s²", "default": 3000, "when": { "kinematics": ["delta"] } },
+
+        { "id": "xy_steps", "label": "X/Y steps/mm", "type": "number", "default": 80, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "z_steps", "label": "Z steps/mm", "type": "number", "default": 400, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "xy_feedrate", "label": "X/Y max feedrate", "type": "number", "unit": "mm/s", "default": 300, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "z_feedrate", "label": "Z max feedrate", "type": "number", "unit": "mm/s", "default": 8, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "xy_accel", "label": "X/Y max accel", "type": "number", "unit": "mm/s²", "default": 3000, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "z_accel", "label": "Z max accel", "type": "number", "unit": "mm/s²", "default": 100, "when": { "kinematics": ["cartesian", "corexy"] } },
+
+        { "id": "e_steps", "label": "Extruder steps/mm", "type": "number", "default": 415 },
+        { "id": "e_feedrate", "label": "Extruder max feedrate", "type": "number", "unit": "mm/s", "default": 50 },
+        { "id": "e_accel", "label": "Extruder max accel", "type": "number", "unit": "mm/s²", "default": 5000 }
+      ]
+    },
+    {
+      "id": "tmc",
+      "title": "TMC2209 drivers (UART)",
+      "fields": [
+        { "id": "tower_current", "label": "Tower run current", "type": "number", "unit": "mA", "default": 800, "when": { "kinematics": ["delta"] } },
+        { "id": "xy_current", "label": "X/Y run current", "type": "number", "unit": "mA", "default": 800, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "z_current", "label": "Z run current", "type": "number", "unit": "mA", "default": 800, "when": { "kinematics": ["cartesian", "corexy"] } },
+        { "id": "e_current", "label": "Extruder run current", "type": "number", "unit": "mA", "default": 650 },
+        { "id": "microsteps", "label": "Microsteps", "type": "select", "default": "16", "options": [
+          { "value": "16", "label": "16" }, { "value": "32", "label": "32" },
+          { "value": "64", "label": "64" }, { "value": "128", "label": "128" }
+        ] },
+        { "id": "stealthchop", "label": "StealthChop (quiet mode)", "type": "switch", "default": true },
+        { "id": "sensorless_homing", "label": "Sensorless homing (StallGuard)", "type": "switch", "default": false }
+      ]
+    },
+    {
+      "id": "hotend",
+      "title": "Hotend",
+      "fields": [
+        { "id": "temp_sensor_0", "label": "Thermistor", "type": "thermistor", "default": "1", "ini": "TEMP_SENSOR_0" },
+        { "id": "heater_0_maxtemp", "label": "Max temperature", "type": "number", "unit": "°C", "default": 275, "ini": "HEATER_0_MAXTEMP" },
+        { "id": "hotend_pid", "label": "PID control", "type": "switch", "default": true, "help": "Off = bang-bang." }
+      ]
+    },
+    {
+      "id": "bed",
+      "title": "Heated bed",
+      "fields": [
+        { "id": "temp_sensor_bed", "label": "Thermistor", "type": "thermistor", "default": "1", "ini": "TEMP_SENSOR_BED" },
+        { "id": "bed_maxtemp", "label": "Max temperature", "type": "number", "unit": "°C", "default": 120, "ini": "BED_MAXTEMP" },
+        { "id": "bed_pid", "label": "PID control", "type": "switch", "default": false, "help": "Off = bang-bang (typical for beds)." }
+      ]
+    },
+    {
+      "id": "extruder",
+      "title": "Extruder & filament",
+      "fields": [
+        { "id": "extruders", "label": "Extruder count", "type": "number", "default": 1, "ini": "EXTRUDERS" },
+        { "id": "filament_dia", "label": "Filament diameter", "type": "number", "unit": "mm", "default": 1.75, "ini": "DEFAULT_NOMINAL_FILAMENT_DIA" },
+        { "id": "extrude_mintemp", "label": "Min extrude temp", "type": "number", "unit": "°C", "default": 170, "ini": "EXTRUDE_MINTEMP" }
+      ]
+    }
+  ]
+}

@@ -90,13 +90,20 @@
             </select>
           </div>
         </div>
-        <div id="config-groups" class="config-groups">
-          <p class="note">
-            The configuration form is schema-driven and renders here based on
-            your board + kinematics choice. That's Phase 1 — the top controls
-            above are the shell it hangs off.
-          </p>
+        <div id="config-form" class="config-form">
+          <p class="note" id="config-loading">Loading configuration form…</p>
         </div>
+
+        <div class="config-actions">
+          <button id="cfg-save" class="btn-primary">Save configuration</button>
+          <button id="cfg-download" class="btn-secondary">Download config.ini</button>
+          <span id="cfg-status" class="muted"></span>
+        </div>
+
+        <details class="preview-wrap" open>
+          <summary>Generated <code>config.ini</code></summary>
+          <pre id="config-preview" class="config-preview"></pre>
+        </details>
       </section>
     </main>
   </div>
@@ -124,5 +131,6 @@
   </div>
 
   <script src="/app.js"></script>
+  <script src="/config.js"></script>
 </body>
 </html>

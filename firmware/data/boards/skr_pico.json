@@ -1,0 +1,16 @@
+{
+  "id": "skr_pico",
+  "name": "BigTreeTech SKR Pico",
+  "motherboard": "BOARD_BTT_SKR_PICO",
+  "mcu": "RP2040",
+  "driver": "TMC2209",
+  "driver_interface": "uart",
+  "pio_env": "SKR_Pico",
+  "axes": ["X", "Y", "Z", "E0"],
+  "notes": "TMC2209 drivers share one UART with per-driver addressing; the SKR Pico pins file handles that automatically once MOTHERBOARD is set.",
+  "base_examples": {
+    "delta": "example/delta/generic",
+    "cartesian": null,
+    "corexy": null
+  }
+}
