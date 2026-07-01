@@ -34,13 +34,13 @@ if (-not $Tag) {
 Write-Host "Marlin ref: $Tag" -ForegroundColor Cyan
 
 # Clone Marlin (shallow) at that ref. If an existing clone targets a different
-# ref, re-clone it — reusing a mismatched clone is how you build the wrong
+# ref, re-clone it - reusing a mismatched clone is how you build the wrong
 # Marlin version (e.g. a stable release with no SKR_Pico env).
 $refMarker = Join-Path $WorkDir ".angleros-ref"
 if (Test-Path $WorkDir) {
   $haveRef = if (Test-Path $refMarker) { (Get-Content $refMarker -Raw).Trim() } else { "" }
   if ($haveRef -ne $Tag) {
-    Write-Host "Existing $WorkDir is '$haveRef' but need '$Tag' — re-cloning..." -ForegroundColor Yellow
+    Write-Host "Existing $WorkDir is '$haveRef' but need '$Tag' - re-cloning..." -ForegroundColor Yellow
     Remove-Item -Recurse -Force $WorkDir
   } else {
     Write-Host "Reusing existing $WorkDir (already @ $Tag)." -ForegroundColor Yellow
