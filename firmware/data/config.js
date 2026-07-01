@@ -151,13 +151,17 @@
     const kin = kinematics();
     const lines = [];
     const date = new Date().toISOString().slice(0, 10);
+    // The Configurations repo publishes each release as a branch named
+    // "release-<tag>" (there is no bare "<tag>" tag), so that's the ref we pull
+    // the base example from. Fall back to the 2.1.x dev branch when offline.
+    const ref = marlinTag ? 'release-' + marlinTag : 'bugfix-2.1.x';
+
     lines.push('# AnglerOS generated config.ini — ' + date);
-    lines.push(`# Board: ${board.name} | Kinematics: ${kin} | Marlin: ${marlinTag || 'latest'}`);
+    lines.push(`# Board: ${board.name} | Kinematics: ${kin} | Marlin source tag: ${marlinTag || 'bugfix-2.1.x'} | config ref: ${ref}`);
     lines.push('');
     lines.push('[config:base]');
 
     const base = board.base_examples[kin];
-    const ref = marlinTag || 'bugfix-2.1.x';
     lines.push(`ini_use_config = ${base ? base + ' @ ' + ref + ', ' : ''}base`);
     lines.push(`MOTHERBOARD = ${board.motherboard}`);
     if (kin === 'corexy') lines.push('COREXY = on');

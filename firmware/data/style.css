@@ -159,9 +159,14 @@ input {
 .field-help { font-size: .72rem; color: var(--muted); margin-top: .3rem; }
 .vec3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
 
-/* Toggle switch */
-.group-field.is-switch { flex-direction: row; align-items: center; justify-content: space-between; }
-.group-field.is-switch label { margin: 0; }
+/* Toggle switch — keep the switch right next to its label, not pushed away */
+.group-field.is-switch {
+  flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: .6rem; flex-wrap: wrap;
+}
+.group-field.is-switch label { margin: 0; order: 1; }
+.group-field.is-switch .switch { order: 0; }
+.group-field.is-switch .field-help { flex-basis: 100%; order: 2; }
 .switch { position: relative; display: inline-block; width: 42px; height: 22px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .switch span {

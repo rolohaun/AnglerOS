@@ -9,6 +9,9 @@ firmware/.vscode/
 *.pyc
 __pycache__/
 
+# Local Marlin build harness (cloned by tools/build-local.ps1)
+marlin-build/
+
 # Build output
 build/
 dist/
