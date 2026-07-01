@@ -99,6 +99,29 @@
       </section>
     </main>
   </div>
+
+  <!-- Wi-Fi setup overlay: shown only when the board is in SoftAP setup mode -->
+  <div class="setup-overlay" id="setup" hidden>
+    <form class="setup-card" id="setup-form">
+      <div class="brand">
+        <span class="brand-mark">🎣</span>
+        <span class="brand-name">Angler<span class="accent">OS</span> setup</span>
+      </div>
+      <p class="muted">Connect AnglerOS to your Wi-Fi. The board will reboot and
+        join your network — then reach it at its new address.</p>
+      <div class="field">
+        <label for="ssid">Network name (SSID)</label>
+        <input id="ssid" name="ssid" autocomplete="off" required />
+      </div>
+      <div class="field">
+        <label for="pass">Password</label>
+        <input id="pass" name="pass" type="password" autocomplete="off" />
+      </div>
+      <button type="submit" class="btn-primary" id="setup-save">Save &amp; reboot</button>
+      <p class="setup-msg muted" id="setup-msg"></p>
+    </form>
+  </div>
+
   <script src="/app.js"></script>
 </body>
 </html>
