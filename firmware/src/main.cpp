@@ -49,6 +49,9 @@ static void onImprovError(ImprovTypes::Error err) {
 }
 
 void setup() {
+  // A larger RX buffer helps the Improv handshake survive the busy boot window
+  // (LittleFS mount + Wi-Fi + web server) without dropping request bytes.
+  Serial.setRxBufferSize(1024);
   Serial.begin(115200);
   delay(200);
   Serial.printf("\nAnglerOS %s booting...\n", FW_VERSION);

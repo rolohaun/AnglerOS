@@ -43,6 +43,18 @@
     .note { margin-top: 1.5rem; font-size: .85rem; color: var(--muted); }
     .note code { color: var(--text); }
     a { color: var(--accent); }
+    .after {
+      margin-top: 1.25rem; padding: .9rem 1rem; font-size: .85rem;
+      background: var(--bg); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent); border-radius: 8px;
+    }
+    .after summary {
+      cursor: pointer; font-weight: 600; color: var(--text);
+    }
+    .after ol { margin: .8rem 0 .4rem; padding-left: 1.1rem; color: var(--muted); }
+    .after li { margin-bottom: .5rem; }
+    .after strong { color: var(--text); }
+    .after code { color: var(--accent); }
   </style>
 </head>
 <body>
@@ -64,12 +76,27 @@
 
     <p class="note">
       Requires <strong>Chrome</strong> or <strong>Edge</strong>. Plug the ESP32
-      into your PC <strong>over USB</strong>, click <em>Connect</em>, and follow
-      the prompts — after flashing you can set up Wi-Fi right here in the
-      browser. If flashing doesn't start, hold the <code>IO0</code> button while
-      connecting to enter the bootloader. See the
-      <a href="../docs/">setup docs</a>.
+      into your PC <strong>over USB</strong>, click <em>Connect</em>, then
+      <em>Install</em>. If flashing doesn't start, hold the <code>IO0</code>
+      button while connecting to enter the bootloader.
     </p>
+
+    <details class="after" open>
+      <summary>After installing — connecting to Wi-Fi</summary>
+      <ol>
+        <li>When the installer offers <strong>Connect to Wi-Fi</strong>, pick
+          your network and enter the password. Done — click
+          <strong>Visit Device</strong>.</li>
+        <li><strong>No Wi-Fi step appeared?</strong> Unplug the board, plug it
+          back in, and click <em>Connect → Next</em> again — the reset sometimes
+          needs a nudge on these boards.</li>
+        <li><strong>Still nothing?</strong> The board also creates its own
+          <strong>“AnglerOS-Setup”</strong> Wi-Fi hotspot. Join it from your
+          phone or laptop, and a setup page opens where you enter your network.
+          The board then reboots and joins it.</li>
+      </ol>
+      <p class="muted">See the <a href="../docs/">setup docs</a> for details.</p>
+    </details>
   </div>
 
   <script>
