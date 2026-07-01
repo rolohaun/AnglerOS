@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AnglerOS</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Left sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">🎣</span>
+        <span class="brand-name">Angler<span class="accent">OS</span></span>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard">
+          <span class="nav-ico">▦</span> Dashboard
+        </button>
+        <button class="nav-item" data-view="configuration">
+          <span class="nav-ico">⚙</span> Configuration
+        </button>
+      </nav>
+      <div class="sidebar-foot">
+        <span id="fw-version">v—</span>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <header class="topbar">
+        <h1 id="view-title">Dashboard</h1>
+        <div class="status">
+          <span id="status-dot" class="dot dot-off"></span>
+          <span id="status-text">connecting…</span>
+          <span id="status-ip" class="muted"></span>
+        </div>
+      </header>
+
+      <!-- Dashboard view -->
+      <section class="view active" id="view-dashboard">
+        <div class="grid">
+          <div class="card">
+            <div class="card-title">Hotend</div>
+            <div class="temp"><span id="t-hotend" class="temp-now">—</span><span class="temp-unit">°C</span></div>
+            <div class="muted">target <span id="t-hotend-set">—</span>°C</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Bed</div>
+            <div class="temp"><span id="t-bed" class="temp-now">—</span><span class="temp-unit">°C</span></div>
+            <div class="muted">target <span id="t-bed-set">—</span>°C</div>
+          </div>
+          <div class="card camera-card">
+            <div class="card-title">Camera</div>
+            <div class="camera-ph">OV3660 feed — Phase 3</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Move</div>
+            <div class="jog-ph muted">Jog controls appear once the printer link is up (Phase 3).</div>
+          </div>
+        </div>
+        <p class="note">
+          The dashboard connects to Marlin over UART. That bridge lands in
+          Phase 3 — for now these are placeholders. The board link status above
+          reflects the ESP32 itself.
+        </p>
+      </section>
+
+      <!-- Configuration view -->
+      <section class="view" id="view-configuration">
+        <div class="config-top">
+          <div class="field">
+            <label>Marlin version</label>
+            <div class="pill" id="marlin-version">latest stable — fetched in Phase 1</div>
+          </div>
+          <div class="field">
+            <label for="board">Mainboard</label>
+            <select id="board">
+              <option value="skr_pico">BigTreeTech SKR Pico</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="kinematics">Kinematics</label>
+            <select id="kinematics">
+              <option value="cartesian">Cartesian</option>
+              <option value="corexy">CoreXY</option>
+              <option value="delta" selected>Delta</option>
+            </select>
+          </div>
+        </div>
+        <div id="config-groups" class="config-groups">
+          <p class="note">
+            The configuration form is schema-driven and renders here based on
+            your board + kinematics choice. That's Phase 1 — the top controls
+            above are the shell it hangs off.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>

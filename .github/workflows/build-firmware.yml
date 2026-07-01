@@ -31,8 +31,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install PlatformIO
-        run: pip install --upgrade platformio
+      - name: Install PlatformIO + esptool
+        run: pip install --upgrade platformio "esptool>=4.7,<5"
 
       - name: Build firmware + LittleFS image
         working-directory: firmware

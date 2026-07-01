@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -25,10 +26,20 @@ LAYOUT = [
 ]
 
 
+def pio_core_dir() -> Path:
+    return Path(os.environ.get("PLATFORMIO_CORE_DIR", Path.home() / ".platformio"))
+
+
 def find(build_dir: Path, name: str) -> Path:
+    # Prefer the env's build dir; boot_app0.bin lives in the framework package,
+    # not the build dir, so fall back to the PlatformIO packages tree.
     hit = next(build_dir.rglob(name), None)
     if hit is None:
-        sys.exit(f"error: could not find {name} under {build_dir}")
+        packages = pio_core_dir() / "packages"
+        if packages.exists():
+            hit = next(packages.rglob(name), None)
+    if hit is None:
+        sys.exit(f"error: could not find {name} under {build_dir} or PlatformIO packages")
     return hit
 
 
