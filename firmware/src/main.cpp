@@ -1,13 +1,15 @@
 // AnglerOS — ESP32-CAM firmware entry point
 //
 // Phase 0: mount LittleFS, connect to saved Wi-Fi (STA) or fall back to a
-// SoftAP setup portal, and serve the SPA + status/provisioning API. Camera,
-// Marlin UART bridge, GitHub client and config generator arrive in later
-// phases — see the project plan.
+// SoftAP setup portal, and serve the SPA + status/provisioning API. First-time
+// Wi-Fi setup is also handled over USB via Improv, so the ESP Web Tools
+// installer can guide the user straight from "flash" to "connected". Camera,
+// Marlin UART bridge, GitHub client and config generator arrive in later phases.
 
 #include <Arduino.h>
 #include <WiFi.h>
 #include <LittleFS.h>
+#include <ImprovWiFiLibrary.h>
 
 #include "settings_store.h"
 #include "web_server.h"
@@ -15,6 +17,9 @@
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
 static const uint32_t STA_TIMEOUT_MS = 15000;
+
+// Improv Wi-Fi over the USB serial link (shared with the boot log).
+static ImprovWiFi improvSerial(&Serial);
 
 static bool connectSTA(const WifiCreds &c) {
   WiFi.mode(WIFI_STA);
@@ -29,6 +34,20 @@ static bool connectSTA(const WifiCreds &c) {
   return WiFi.status() == WL_CONNECTED;
 }
 
+// Fired when the browser (via Improv) successfully sets up Wi-Fi. Persist the
+// credentials so the board reconnects on its own next boot.
+static void onImprovConnected(const char *ssid, const char *password) {
+  settingsSaveWifi(ssid, password);
+  Serial.printf("[wifi] Improv connected to \"%s\": http://%s/\n", ssid,
+                WiFi.localIP().toString().c_str());
+  Serial.println("[setup] Done! Click \"Visit Device\" in the installer, or "
+                 "open the address above in your browser.");
+}
+
+static void onImprovError(ImprovTypes::Error err) {
+  Serial.printf("[wifi] Improv error: %d\n", (int)err);
+}
+
 void setup() {
   Serial.begin(115200);
   delay(200);
@@ -40,6 +59,11 @@ void setup() {
     Serial.println("[fs] LittleFS mounted");
   }
 
+  improvSerial.setDeviceInfo(ImprovTypes::ChipFamily::CF_ESP32, "AnglerOS",
+                             FW_VERSION, "AnglerOS", "http://{LOCAL_IPV4}");
+  improvSerial.onImprovConnected(onImprovConnected);
+  improvSerial.onImprovError(onImprovError);
+
   WifiCreds creds;
   bool connected = false;
   if (settingsLoadWifi(creds)) {
@@ -50,10 +74,15 @@ void setup() {
     Serial.printf("[wifi] STA connected: http://%s/\n",
                   WiFi.localIP().toString().c_str());
   } else {
-    WiFi.mode(WIFI_AP);
+    // Keep AP + STA both live: STA lets Improv provision over USB while the
+    // SoftAP portal stays available as a fallback.
+    WiFi.mode(WIFI_AP_STA);
     WiFi.softAP(AP_SSID);
-    Serial.printf("[wifi] setup portal: SSID \"%s\" -> http://%s/\n", AP_SSID,
-                  WiFi.softAPIP().toString().c_str());
+    Serial.println("[setup] No Wi-Fi configured yet. Two ways to set it up:");
+    Serial.println("[setup]  1) In the browser installer: click \"Next\", then "
+                   "\"Connect to Wi-Fi\".");
+    Serial.printf("[setup]  2) Or join the \"%s\" hotspot and open http://%s/\n",
+                  AP_SSID, WiFi.softAPIP().toString().c_str());
   }
 
   webServerBegin(FW_VERSION);
@@ -61,10 +90,12 @@ void setup() {
 }
 
 void loop() {
+  improvSerial.handleSerial();
+
   if (webServerPendingRestart()) {
     Serial.println("[wifi] credentials saved, rebooting...");
     delay(500);
     ESP.restart();
   }
-  delay(100);
+  delay(10);
 }
