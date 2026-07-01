@@ -272,13 +272,33 @@
     }
   }
 
-  function download() {
-    const blob = new Blob([generateIni()], { type: 'text/plain' });
+  function saveBlob(text, name) {
+    const blob = new Blob([text], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'config.ini';
+    a.download = name;
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  function download() { saveBlob(generateIni(), 'config.ini'); }
+
+  // Build a self-contained PowerShell script (config embedded) that compiles
+  // the firmware locally with PlatformIO — no GitHub, token, or fork needed.
+  async function downloadBuilder() {
+    statusEl.textContent = 'Preparing build script…';
+    try {
+      const tmpl = await (await fetch('/build-template.ps1', { cache: 'no-store' })).text();
+      const ini = generateIni();
+      const script = tmpl
+        .replace('__MARLIN_REF__', () => marlinRef())
+        .replace('__PIO_ENV__', () => board.pio_env)
+        .replace('__CONFIG_INI__', () => ini);
+      saveBlob(script, 'angleros-build.ps1');
+      statusEl.textContent = 'Build script downloaded — right-click it → Run with PowerShell.';
+    } catch (e) {
+      statusEl.textContent = 'Could not build script: ' + e.message;
+    }
   }
 
   // ---- Init ----
@@ -313,6 +333,7 @@
     });
     document.getElementById('cfg-save').addEventListener('click', save);
     document.getElementById('cfg-download').addEventListener('click', download);
+    document.getElementById('cfg-builder').addEventListener('click', downloadBuilder);
   }
 
   init();

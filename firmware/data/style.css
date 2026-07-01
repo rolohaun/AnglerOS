@@ -181,7 +181,17 @@ input {
 .switch input:checked + span::before { transform: translateX(20px); background: var(--accent); }
 
 /* Actions + preview */
-.config-actions { display: flex; align-items: center; gap: .8rem; margin: 1.2rem 0; }
+.config-actions { display: flex; align-items: center; gap: .8rem; margin: 1.2rem 0; flex-wrap: wrap; }
+.note-block {
+  background: var(--panel); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 8px;
+  padding: .9rem 1rem; margin-bottom: 1.2rem;
+}
+.note-block summary { cursor: pointer; font-weight: 600; }
+.note-block ol { margin: .8rem 0 .4rem; padding-left: 1.2rem; color: var(--muted); }
+.note-block li { margin-bottom: .45rem; }
+.note-block strong { color: var(--text); }
+.note-block code { color: var(--accent); font-size: .85em; }
 .btn-secondary {
   padding: .65rem .9rem; background: var(--bg-elev); color: var(--text);
   border: 1px solid var(--border); border-radius: 8px; font: inherit; cursor: pointer;
