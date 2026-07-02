@@ -67,9 +67,13 @@ The dashboard's link indicator shows `usb` once the printer enumerates. If a
 USB-C-to-USB-C cable does not enumerate (some boards omit the CC resistors for
 host role), use a **USB-C OTG adapter + USB-A cable** instead.
 
-Board pin map (for reference): camera XCLK=15 SIOD=4 SIOC=5 VSYNC=6 HREF=7
-PCLK=13 Y2..Y9=11,9,8,10,12,18,17,16; microSD (1-bit) CLK=39 CMD=38 D0=40.
-The printer UART is disabled on this board - USB-OTG is the link.
+Board pin map (confirmed against the vendor pinout): camera XCLK=15 SIOD=4
+SIOC=5 VSYNC=6 HREF=7 PCLK=13 Y2..Y9=11,9,8,10,12,18,17,16; microSD (1-bit)
+CLK=39 CMD=38 D0=40; USB OTG D-/D+ = GPIO19/20; onboard LED = **GPIO2** (PWM,
+drives the dashboard brightness slider); WS2812 RGB = GPIO48 (unused, future
+status light). Strapping pins on the S3 are 0/3/45/46 — none used by AnglerOS.
+Free GPIOs if a UART fallback is ever needed: 14, 21, 47. The printer UART is
+disabled on this board — USB-OTG is the link.
 
 ## Flashing AnglerOS onto the ESP32
 
