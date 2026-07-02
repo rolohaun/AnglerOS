@@ -15,6 +15,7 @@
 #include "web_server.h"
 #include "printer_uart.h"
 #include "system_metrics.h"
+#include "storage_metrics.h"
 
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
@@ -66,6 +67,15 @@ void setup() {
     Serial.println("[fs] LittleFS mount failed");
   } else {
     Serial.println("[fs] LittleFS mounted");
+  }
+
+  storageBegin();
+  if (storageSdMounted()) {
+    Serial.printf("[sd] %s %llu / %llu bytes used\n", storageSdType(),
+                  (unsigned long long)storageSdUsed(),
+                  (unsigned long long)storageSdTotal());
+  } else {
+    Serial.printf("[sd] %s\n", storageSdStatus());
   }
 
   improvSerial.setDeviceInfo(ImprovTypes::ChipFamily::CF_ESP32, "AnglerOS",

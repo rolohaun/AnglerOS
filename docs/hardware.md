@@ -2,30 +2,39 @@
 
 ## Boards
 
-- **ESP32-CAM** (AI-Thinker / Aideepen) — plain ESP32-LX6, 4MB flash, PSRAM,
+- **ESP32-CAM** (AI-Thinker / Aideepen) - plain ESP32-LX6, 4MB flash, PSRAM,
   OV3660 camera, onboard white flash LED. Programmed via the bundled **CH340**
   USB-serial adapter (Micro-USB), which also powers it during setup.
-- **BigTreeTech SKR Pico** — RP2040 mainboard running Marlin. Flashed via
+- **BigTreeTech SKR Pico** - RP2040 mainboard running Marlin. Flashed via
   BOOTSEL (drag-and-drop `.uf2`).
 
-## ESP32-CAM pin plan (camera ON, SD card unused)
+## ESP32-CAM pin plan (camera ON, SD + printer UART mode)
 
-The camera occupies most GPIOs. We **do not use the microSD card**, which frees
-the SD-data pins for the UART link to the SKR Pico.
+The camera occupies most GPIOs. AnglerOS mounts the microSD card in one-bit
+SD_MMC mode and keeps a hardware UART available for the printer.
 
 | Function | ESP32-CAM GPIO | Notes |
 |----------|----------------|-------|
 | Camera (OV3660) | standard AI-Thinker camera bus | unchanged |
-| Flash LED | GPIO 4 | onboard white LED, PWM brightness |
-| UART TX → printer RX | **GPIO 14** | ESP32 `Serial1` TX |
-| UART RX ← printer TX | **GPIO 13** | ESP32 `Serial1` RX |
+| microSD | GPIO 14 / 15 / 2 | SD_MMC one-bit mode |
+| UART TX to printer RX | **GPIO 4** | ESP32 `Serial1` TX; shared with onboard flash LED |
+| UART RX from printer TX | **GPIO 13** | ESP32 `Serial1` RX |
 | GND | GND | common ground with the mainboard |
 
-GPIO 13 and 14 are free once the SD card is unused and are **not** boot
-strapping pins (unlike GPIO 12/15/2), so they're safe for the UART. Default baud
-is **250000** (Marlin's default `BAUDRATE`).
+Default baud is **250000** (Marlin's default `BAUDRATE`). GPIO4 is also the
+ESP32-CAM onboard flash LED, so UART traffic may flicker the LED and AnglerOS
+should not use the flash LED while printer UART is enabled.
 
-Logic levels are 3.3V on both sides — no level shifter needed. Do **not**
+## ESP32-CAM microSD storage mode
+
+AnglerOS attempts to mount the ESP32-CAM microSD slot in one-bit SD_MMC mode at
+boot. If a card is mounted, the System tab reports its capacity and usage.
+
+On the AI-Thinker-style ESP32-CAM, SD_MMC one-bit mode uses GPIO14 as the SD
+clock. Earlier AnglerOS builds used GPIO14 for UART TX; current builds use GPIO4
+for UART TX so SD storage and the printer serial bridge can run together.
+
+Logic levels are 3.3V on both sides - no level shifter needed. Do **not**
 back-power the mainboard from the ESP32; power each board from its own supply
 and share only GND + the two UART lines.
 
@@ -38,7 +47,7 @@ and share only GND + the two UART lines.
 
 Use the [browser flasher](../pages/) (Chrome/Edge). The Aideepen CAM-MB adapter
 supports auto-download (DTR/RTS auto-reset). If your adapter lacks auto-reset,
-hold **IO0 → GND** while connecting to enter the ROM bootloader.
+hold **IO0 to GND** while connecting to enter the ROM bootloader.
 
 ## Flashing Marlin onto the SKR Pico
 

@@ -154,6 +154,7 @@
     navItems.forEach((n) => n.classList.toggle('active', n.dataset.view === view));
     title.textContent = views[view] || view;
     try { localStorage.setItem('angleros.view', view); } catch (e) {}
+    window.dispatchEvent(new CustomEvent('angleros:view', { detail: { view } }));
   }
 
   navItems.forEach((n) => n.addEventListener('click', () => show(n.dataset.view)));
@@ -202,6 +203,16 @@
     return Math.round(((total - free) / total) * 100);
   }
 
+  function usedBytesPercent(used, total) {
+    if (!Number.isFinite(used) || !Number.isFinite(total) || total <= 0) return 0;
+    return Math.round((used / total) * 100);
+  }
+
+  function storageNote(used, total) {
+    if (!Number.isFinite(used) || !Number.isFinite(total) || total <= 0) return 'Capacity unknown';
+    return formatBytes(used) + ' used / ' + formatBytes(total) + ' total';
+  }
+
   function updateSystem(s) {
     const cpu = Number.isFinite(s.cpu_load) ? s.cpu_load : 0;
     setText('sys-cpu', cpu + '%');
@@ -218,11 +229,23 @@
     setText('sys-psram-free', s.psram_total ? formatBytes(s.psram) + ' free / ' + formatBytes(s.psram_total) + ' total' : 'No PSRAM reported');
     setMeter('sys-psram-bar', psramUsed);
 
+    const lfsUsed = usedBytesPercent(s.fs_used, s.fs_total);
+    setText('sys-lfs', s.fs_total ? lfsUsed + '% used' : '--');
+    setText('sys-lfs-free', s.fs_total ? storageNote(s.fs_used, s.fs_total) : 'LittleFS unavailable');
+    setMeter('sys-lfs-bar', lfsUsed);
+
+    const sdUsed = usedBytesPercent(s.sd_used, s.sd_total);
+    setText('sys-sd', s.sd_mounted ? sdUsed + '% used' : 'Not mounted');
+    setText('sys-sd-free', s.sd_mounted
+      ? (s.sd_type || 'SD') + ' / ' + storageNote(s.sd_used, s.sd_total)
+      : (s.sd_status || 'No SD card mounted'));
+    setMeter('sys-sd-bar', sdUsed);
+
     setText('sys-uptime', formatUptime(s.uptime));
     const network = s.mode === 'sta'
       ? (s.ssid || 'Wi-Fi') + ' / ' + (s.rssi !== undefined ? s.rssi + ' dBm' : 'RSSI unknown')
       : 'Setup AP / ' + (s.ip || 'no IP');
-    setText('sys-network', network);
+    setText('sys-network', network + (s.printer_uart === false ? ' / UART unavailable' : ''));
   }
 
   async function poll() {

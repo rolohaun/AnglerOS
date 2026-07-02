@@ -2,6 +2,7 @@
 #include "settings_store.h"
 #include "printer_uart.h"
 #include "system_metrics.h"
+#include "storage_metrics.h"
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -34,6 +35,14 @@ static void handleStatus(AsyncWebServerRequest *req) {
   doc["cpu_load"] = systemCpuLoadPercent();
   doc["cpu_freq_mhz"] = getCpuFrequencyMhz();
   doc["uptime"] = (uint32_t)(millis() / 1000);
+  doc["printer_uart"] = printerUartAvailable();
+  doc["fs_used"] = storageLittleFsUsed();
+  doc["fs_total"] = storageLittleFsTotal();
+  doc["sd_mounted"] = storageSdMounted();
+  doc["sd_status"] = storageSdStatus();
+  doc["sd_type"] = storageSdType();
+  doc["sd_used"] = storageSdUsed();
+  doc["sd_total"] = storageSdTotal();
 
   String out;
   serializeJson(doc, out);

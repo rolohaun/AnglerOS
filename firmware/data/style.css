@@ -179,6 +179,7 @@ button { color: inherit; }
 .dash-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(220px, 1fr));
+  grid-auto-rows: 8px;
   grid-auto-flow: row dense;
   gap: 1.25rem;
   align-items: start;
@@ -191,6 +192,7 @@ button { color: inherit; }
 }
 .widget {
   grid-column: auto;
+  align-self: start;
   min-height: 100px;
   overflow: hidden;
 }

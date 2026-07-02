@@ -7,8 +7,38 @@
   const resetLayoutBtn = document.getElementById('layout-reset');
   const DEFAULT_LAYOUT = ['print', 'temps', 'toolhead', 'machine', 'terminal', 'macros', 'extruder'];
   let draggedWidget = null;
+  let masonryFrame = 0;
 
   function widgetKey(el) { return el && el.dataset ? el.dataset.widget : null; }
+
+  function resizeMasonryItem(widget) {
+    if (!widget) return;
+    const style = getComputedStyle(gridEl);
+    const rowHeight = parseFloat(style.gridAutoRows) || 8;
+    const rowGap = parseFloat(style.rowGap) || 0;
+    widget.style.gridRowEnd = 'auto';
+    const rows = Math.ceil((widget.getBoundingClientRect().height + rowGap) / (rowHeight + rowGap));
+    widget.style.gridRowEnd = 'span ' + Math.max(1, rows);
+  }
+
+  function resizeMasonry() {
+    cancelAnimationFrame(masonryFrame);
+    masonryFrame = requestAnimationFrame(() => {
+      gridEl.querySelectorAll('[data-widget]').forEach(resizeMasonryItem);
+    });
+  }
+
+  function wireMasonry() {
+    resizeMasonry();
+    if ('ResizeObserver' in window) {
+      const observer = new ResizeObserver(resizeMasonry);
+      gridEl.querySelectorAll('[data-widget]').forEach((widget) => observer.observe(widget));
+    }
+    window.addEventListener('resize', resizeMasonry);
+    window.addEventListener('angleros:view', (e) => {
+      if (e.detail && e.detail.view === 'dashboard') resizeMasonry();
+    });
+  }
 
   function saveLayout() {
     try {
@@ -32,6 +62,7 @@
       const el = byKey.get(key);
       if (el && !placed.has(key)) gridEl.appendChild(el);
     });
+    resizeMasonry();
   }
 
   function loadLayout() {
@@ -67,6 +98,7 @@
         clearDropMarks();
         draggedWidget = null;
         saveLayout();
+        resizeMasonry();
       });
     });
 
@@ -92,12 +124,15 @@
       }
       clearDropMarks();
       saveLayout();
+      resizeMasonry();
     });
 
     resetLayoutBtn.addEventListener('click', () => {
       applyLayout(DEFAULT_LAYOUT);
       saveLayout();
     });
+
+    wireMasonry();
   }
 
   // ---- WebSocket link to the printer ----
@@ -216,6 +251,7 @@
       macros = DEFAULT_MACROS.slice();
     }
     renderMacros();
+    resizeMasonry();
   }
 
   async function saveMacros() {
@@ -243,7 +279,7 @@
       row.querySelector('.macro-run').addEventListener('click', () => runMacro(m));
       row.querySelector('.macro-edit').addEventListener('click', () => openEditor(i));
       row.querySelector('.macro-del').addEventListener('click', () => {
-        macros.splice(i, 1); saveMacros(); renderMacros();
+        macros.splice(i, 1); saveMacros(); renderMacros(); resizeMasonry();
       });
       listEl.appendChild(row);
     });
@@ -267,6 +303,7 @@
     if (editIndex >= 0) macros[editIndex] = m; else macros.push(m);
     saveMacros(); renderMacros();
     editor.hidden = true;
+    resizeMasonry();
   });
 
   function escapeHtml(s) {
