@@ -12,6 +12,14 @@
   const themeInput = document.getElementById('theme-color');
   const themeReset = document.getElementById('theme-reset');
   const themeSwatches = document.querySelectorAll('.theme-swatch');
+  const brandNameEl = document.getElementById('brand-name');
+  const printerNameInput = document.getElementById('printer-name');
+  const printerNameSave = document.getElementById('printer-name-save');
+  const printerNameClear = document.getElementById('printer-name-clear');
+  const printerNameStatus = document.getElementById('printer-name-status');
+  const PRINTER_NAME_KEY = 'angleros.printer.name';
+  const DEFAULT_BRAND_HTML = 'Angler<span class="accent">OS</span>';
+  let printerNameTimer = null;
 
   function clamp(n) { return Math.max(0, Math.min(255, n)); }
 
@@ -57,6 +65,83 @@
   }
   themeSwatches.forEach((b) => b.addEventListener('click', () => applyTheme(b.dataset.theme, true)));
   if (themeReset) themeReset.addEventListener('click', () => applyTheme(DEFAULT_THEME, true));
+
+  // --- Printer name ---
+  function normalizePrinterName(name) {
+    return String(name || '').replace(/\s+/g, ' ').trim().slice(0, 32);
+  }
+
+  function setPrinterNameStatus(text) {
+    if (printerNameStatus) printerNameStatus.textContent = text || '';
+  }
+
+  function applyPrinterName(name, syncInput) {
+    const clean = normalizePrinterName(name);
+    if (brandNameEl) {
+      if (clean) brandNameEl.textContent = clean;
+      else brandNameEl.innerHTML = DEFAULT_BRAND_HTML;
+    }
+    document.title = clean || 'AnglerOS';
+    if (syncInput !== false && printerNameInput && printerNameInput.value !== clean) printerNameInput.value = clean;
+  }
+
+  function storePrinterName(name) {
+    try {
+      const clean = normalizePrinterName(name);
+      if (clean) localStorage.setItem(PRINTER_NAME_KEY, clean);
+      else localStorage.removeItem(PRINTER_NAME_KEY);
+    } catch (e) {}
+  }
+
+  async function savePrinterName(name, quiet) {
+    const clean = normalizePrinterName(name);
+    applyPrinterName(clean);
+    storePrinterName(clean);
+    if (!quiet) setPrinterNameStatus('Saving...');
+    try {
+      const r = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printer_name: clean }),
+      });
+      if (!r.ok) throw new Error(r.status);
+      if (!quiet) setPrinterNameStatus('Saved');
+    } catch (e) {
+      if (!quiet) setPrinterNameStatus('Saved locally');
+    }
+  }
+
+  function queuePrinterNameSave() {
+    clearTimeout(printerNameTimer);
+    printerNameTimer = setTimeout(() => savePrinterName(printerNameInput.value, true), 700);
+  }
+
+  async function loadPrinterName() {
+    let localName = '';
+    try { localName = localStorage.getItem(PRINTER_NAME_KEY) || ''; } catch (e) {}
+    applyPrinterName(localName);
+    try {
+      const r = await fetch('/api/settings', { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const settings = await r.json();
+      if (settings && Object.prototype.hasOwnProperty.call(settings, 'printer_name')) {
+        const name = normalizePrinterName(settings.printer_name);
+        applyPrinterName(name);
+        storePrinterName(name);
+      }
+    } catch (e) {}
+  }
+
+  if (printerNameInput) {
+    printerNameInput.addEventListener('input', () => {
+      applyPrinterName(printerNameInput.value, false);
+      queuePrinterNameSave();
+      setPrinterNameStatus('');
+    });
+  }
+  if (printerNameSave) printerNameSave.addEventListener('click', () => savePrinterName(printerNameInput.value, false));
+  if (printerNameClear) printerNameClear.addEventListener('click', () => savePrinterName('', false));
+  loadPrinterName();
 
   // --- Tab navigation ---
   const navItems = document.querySelectorAll('.nav-item');

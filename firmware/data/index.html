@@ -12,7 +12,7 @@
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true">&#127907;</span>
-        <span class="brand-name">Angler<span class="accent">OS</span></span>
+        <span id="brand-name" class="brand-name" data-default-name="AnglerOS">Angler<span class="accent">OS</span></span>
       </div>
       <nav class="nav">
         <button class="nav-item active" data-view="dashboard">
@@ -189,7 +189,7 @@
 
       <section class="view" id="view-system">
         <div class="system-grid">
-          <section class="system-panel">
+          <section class="system-panel system-metrics">
             <div class="card-title">
               <span><span class="widget-ico">S</span>ESP32 Status</span>
             </div>
@@ -220,7 +220,24 @@
             </div>
           </section>
 
-          <section class="system-panel">
+          <section class="system-panel system-identity">
+            <div class="card-title">
+              <span><span class="widget-ico">P</span>Printer</span>
+            </div>
+            <div class="settings-panel">
+              <div class="field">
+                <label for="printer-name">Printer name</label>
+                <input id="printer-name" maxlength="32" autocomplete="off" placeholder="AnglerOS" />
+              </div>
+              <div class="settings-actions">
+                <button id="printer-name-save" class="btn-primary" type="button">Save</button>
+                <button id="printer-name-clear" class="btn-secondary" type="button">Clear</button>
+              </div>
+              <small id="printer-name-status" class="muted"></small>
+            </div>
+          </section>
+
+          <section class="system-panel system-theme">
             <div class="card-title">
               <span><span class="widget-ico">T</span>Theme</span>
             </div>

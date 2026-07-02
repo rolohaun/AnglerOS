@@ -83,6 +83,26 @@ void webServerBegin(const char *fwVersion) {
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
 
+  // Saved UI settings, such as the display name shown in the sidebar.
+  server.on("/api/settings", HTTP_GET, [](AsyncWebServerRequest *req) {
+    if (LittleFS.exists("/settings.json")) {
+      req->send(LittleFS, "/settings.json", "application/json");
+    } else {
+      req->send(200, "application/json", "{}");
+    }
+  });
+  server.on(
+      "/api/settings", HTTP_POST,
+      [](AsyncWebServerRequest *req) { req->send(200, "application/json", "{\"ok\":true}"); },
+      nullptr,
+      [](AsyncWebServerRequest *req, uint8_t *data, size_t len, size_t index,
+         size_t total) {
+        static File f;
+        if (index == 0) f = LittleFS.open("/settings.json", "w");
+        if (f) f.write(data, len);
+        if (index + len == total && f) f.close();
+      });
+
   // Saved macros (array of { name, gcode }).
   server.on("/api/macros", HTTP_GET, [](AsyncWebServerRequest *req) {
     if (LittleFS.exists("/macros.json")) {
