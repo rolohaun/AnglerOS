@@ -142,6 +142,25 @@
             </div>
           </section>
 
+          <section class="card widget light-card" data-widget="light" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">L</span>Flash LED</span>
+              <span class="drag-handle" title="Drag panel">::</span>
+            </div>
+            <div class="light-panel">
+              <div class="slider-row">
+                <span>Brightness</span>
+                <b id="flash-brightness-label">0 %</b>
+              </div>
+              <input id="flash-brightness" type="range" min="0" max="100" value="0" />
+              <div class="light-actions">
+                <button id="flash-toggle" class="btn-primary" type="button">Turn on</button>
+                <button id="flash-off" class="btn-secondary" type="button">Off</button>
+              </div>
+              <small id="flash-status" class="muted">Flash LED off</small>
+            </div>
+          </section>
+
           <section class="card widget term-card" data-widget="terminal" draggable="true">
             <div class="card-title">
               <span><span class="widget-ico">&gt;_</span>Console</span>

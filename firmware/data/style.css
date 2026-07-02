@@ -200,6 +200,7 @@ button { color: inherit; }
 .toolhead-card,
 .temps-card,
 .machine-card,
+.light-card,
 .term-card,
 .macros-card,
 .extruder-card { grid-column: auto; }
@@ -261,6 +262,7 @@ button { color: inherit; }
 .term-input,
 .term-log,
 .macro-list,
+.light-panel,
 .slider-row,
 .fake-slider {
   background: transparent;
@@ -583,6 +585,26 @@ button { color: inherit; }
   height: 4px;
   border-radius: 999px;
   background: linear-gradient(90deg, var(--accent) 50%, #4b515a 50%);
+}
+.light-panel {
+  display: grid;
+  gap: .85rem;
+  padding: .2rem 1rem 1rem;
+}
+.light-panel input[type=range] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.light-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .65rem;
+}
+.light-actions .btn-primary {
+  margin: 0;
+}
+#flash-status {
+  min-height: 1.1rem;
 }
 
 /* System */

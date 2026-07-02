@@ -5,7 +5,7 @@
   // ---- Draggable dashboard panels ----
   const gridEl = document.getElementById('dashboard-grid');
   const resetLayoutBtn = document.getElementById('layout-reset');
-  const DEFAULT_LAYOUT = ['print', 'temps', 'toolhead', 'machine', 'terminal', 'macros', 'extruder'];
+  const DEFAULT_LAYOUT = ['print', 'temps', 'toolhead', 'machine', 'light', 'terminal', 'macros', 'extruder'];
   let draggedWidget = null;
   let masonryFrame = 0;
 
@@ -223,6 +223,77 @@
   }));
   document.getElementById('motors-off').addEventListener('click', () => send('M84'));
 
+  // ---- Flash LED ----
+  const flashSlider = document.getElementById('flash-brightness');
+  const flashLabel = document.getElementById('flash-brightness-label');
+  const flashToggle = document.getElementById('flash-toggle');
+  const flashOff = document.getElementById('flash-off');
+  const flashStatus = document.getElementById('flash-status');
+  let lastFlashBrightness = 60;
+  let flashTimer = null;
+
+  function clampPercent(value) {
+    return Math.max(0, Math.min(100, parseInt(value, 10) || 0));
+  }
+
+  function applyFlashUi(value, status) {
+    const brightness = clampPercent(value);
+    if (flashSlider) flashSlider.value = brightness;
+    if (flashLabel) flashLabel.textContent = brightness + ' %';
+    if (flashToggle) flashToggle.textContent = brightness > 0 ? 'On' : 'Turn on';
+    if (flashStatus) flashStatus.textContent = status || (brightness > 0 ? 'Flash LED on' : 'Flash LED off');
+    if (brightness > 0) lastFlashBrightness = brightness;
+    resizeMasonry();
+  }
+
+  async function saveFlashBrightness(value, quiet) {
+    const brightness = clampPercent(value);
+    applyFlashUi(brightness, quiet ? undefined : 'Setting brightness...');
+    try {
+      const body = new URLSearchParams({ brightness: String(brightness) });
+      const r = await fetch('/api/flash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      if (!r.ok) throw new Error(r.status);
+      applyFlashUi(brightness);
+    } catch (e) {
+      applyFlashUi(brightness, 'Local preview only');
+    }
+  }
+
+  function queueFlashSave(value) {
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => saveFlashBrightness(value, true), 120);
+  }
+
+  async function loadFlashBrightness() {
+    try {
+      const r = await fetch('/api/flash', { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
+      const data = await r.json();
+      applyFlashUi(data.brightness || 0);
+    } catch (e) {
+      applyFlashUi(0, 'Flash LED unavailable');
+    }
+  }
+
+  if (flashSlider) {
+    flashSlider.addEventListener('input', () => {
+      applyFlashUi(flashSlider.value);
+      queueFlashSave(flashSlider.value);
+    });
+    flashSlider.addEventListener('change', () => saveFlashBrightness(flashSlider.value, false));
+  }
+  if (flashToggle) {
+    flashToggle.addEventListener('click', () => {
+      const next = clampPercent(flashSlider.value) > 0 ? 0 : lastFlashBrightness;
+      saveFlashBrightness(next, false);
+    });
+  }
+  if (flashOff) flashOff.addEventListener('click', () => saveFlashBrightness(0, false));
+
   // ---- Macros ----
   const listEl = document.getElementById('macro-list');
   const editor = document.getElementById('macro-editor');
@@ -314,5 +385,6 @@
   wireDashboardDrag();
   setLink('disconnected');
   connect();
+  loadFlashBrightness();
   loadMacros();
 })();

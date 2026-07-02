@@ -3,6 +3,7 @@
 #include "printer_uart.h"
 #include "system_metrics.h"
 #include "storage_metrics.h"
+#include "flash_led.h"
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -43,10 +44,30 @@ static void handleStatus(AsyncWebServerRequest *req) {
   doc["sd_type"] = storageSdType();
   doc["sd_used"] = storageSdUsed();
   doc["sd_total"] = storageSdTotal();
+  doc["flash_brightness"] = flashLedBrightness();
 
   String out;
   serializeJson(doc, out);
   req->send(200, "application/json", out);
+}
+
+static void handleFlashStatus(AsyncWebServerRequest *req) {
+  JsonDocument doc;
+  doc["brightness"] = flashLedBrightness();
+
+  String out;
+  serializeJson(doc, out);
+  req->send(200, "application/json", out);
+}
+
+static void handleFlashSave(AsyncWebServerRequest *req) {
+  if (!req->hasParam("brightness", true)) {
+    req->send(400, "application/json", "{\"ok\":false,\"err\":\"brightness required\"}");
+    return;
+  }
+  int value = req->getParam("brightness", true)->value().toInt();
+  flashLedSetBrightness((uint8_t)max(0, min(100, value)));
+  req->send(200, "application/json", "{\"ok\":true}");
 }
 
 // POST /api/wifi  (form params: ssid, pass) — save creds, then reboot into STA.
@@ -91,6 +112,8 @@ void webServerBegin(const char *fwVersion) {
 
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
+  server.on("/api/flash", HTTP_GET, handleFlashStatus);
+  server.on("/api/flash", HTTP_POST, handleFlashSave);
 
   // Saved UI settings, such as the display name shown in the sidebar.
   server.on("/api/settings", HTTP_GET, [](AsyncWebServerRequest *req) {

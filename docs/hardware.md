@@ -17,7 +17,7 @@ SD_MMC mode and keeps a hardware UART available for the printer.
 |----------|----------------|-------|
 | Camera (OV3660) | standard AI-Thinker camera bus | unchanged |
 | microSD | GPIO 14 / 15 / 2 | SD_MMC one-bit mode |
-| Flash LED | GPIO 4 | held off by AnglerOS at boot |
+| Flash LED | GPIO 4 | PWM brightness controlled from the dashboard |
 | UART TX to printer RX | **GPIO 12** | ESP32 `Serial1` TX |
 | UART RX from printer TX | **GPIO 13** | ESP32 `Serial1` RX |
 | GND | GND | common ground with the mainboard |
