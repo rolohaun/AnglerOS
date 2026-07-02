@@ -17,13 +17,15 @@ SD_MMC mode and keeps a hardware UART available for the printer.
 |----------|----------------|-------|
 | Camera (OV3660) | standard AI-Thinker camera bus | unchanged |
 | microSD | GPIO 14 / 15 / 2 | SD_MMC one-bit mode |
-| UART TX to printer RX | **GPIO 4** | ESP32 `Serial1` TX; shared with onboard flash LED |
+| Flash LED | GPIO 4 | held off by AnglerOS at boot |
+| UART TX to printer RX | **GPIO 12** | ESP32 `Serial1` TX |
 | UART RX from printer TX | **GPIO 13** | ESP32 `Serial1` RX |
 | GND | GND | common ground with the mainboard |
 
-Default baud is **250000** (Marlin's default `BAUDRATE`). GPIO4 is also the
-ESP32-CAM onboard flash LED, so UART traffic may flicker the LED and AnglerOS
-should not use the flash LED while printer UART is enabled.
+Default baud is **250000** (Marlin's default `BAUDRATE`). GPIO12 is an ESP32
+boot strapping pin, so the printer RX input should not pull it high or low
+during reset. Most printer UART RX pins are high-impedance inputs, which is the
+expected wiring here.
 
 ## ESP32-CAM microSD storage mode
 
@@ -31,8 +33,9 @@ AnglerOS attempts to mount the ESP32-CAM microSD slot in one-bit SD_MMC mode at
 boot. If a card is mounted, the System tab reports its capacity and usage.
 
 On the AI-Thinker-style ESP32-CAM, SD_MMC one-bit mode uses GPIO14 as the SD
-clock. Earlier AnglerOS builds used GPIO14 for UART TX; current builds use GPIO4
-for UART TX so SD storage and the printer serial bridge can run together.
+clock. Earlier AnglerOS builds used GPIO14, then GPIO4, for UART TX. Current
+builds use GPIO12 for UART TX so SD storage and the printer serial bridge can
+run together while the flash LED stays off.
 
 Logic levels are 3.3V on both sides - no level shifter needed. Do **not**
 back-power the mainboard from the ESP32; power each board from its own supply

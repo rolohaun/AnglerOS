@@ -1,9 +1,9 @@
 #include "printer_uart.h"
 
-// ESP32-CAM UART to the printer. RX stays on GPIO13; TX uses GPIO4 so SD_MMC
-// one-bit mode can keep GPIO14 for the SD clock. Common GND with the board.
+// ESP32-CAM UART to the printer. RX stays on GPIO13; TX uses GPIO12 so SD_MMC
+// one-bit mode can keep GPIO14 for the SD clock and GPIO4 can keep the flash LED off.
 static const int8_t PIN_RX = 13;
-static const int8_t PIN_TX = 4;
+static const int8_t PIN_TX = 12;
 
 static HardwareSerial &PSER = Serial1;
 static void (*s_onLine)(const String &) = nullptr;

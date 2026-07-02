@@ -20,6 +20,7 @@
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
 static const uint32_t STA_TIMEOUT_MS = 15000;
+static const int8_t FLASH_LED_PIN = 4;
 // Marlin's default BAUDRATE. Must match the printer serial port the ESP32 wires
 // into (see docs/hardware.md); adjustable later from the UI.
 static const uint32_t PRINTER_BAUD = 250000;
@@ -60,6 +61,8 @@ void setup() {
   Serial.setRxBufferSize(1024);
   Serial.begin(115200);
   systemMetricsBegin();
+  pinMode(FLASH_LED_PIN, OUTPUT);
+  digitalWrite(FLASH_LED_PIN, LOW);
   delay(200);
   Serial.printf("\nAnglerOS %s booting...\n", FW_VERSION);
 
