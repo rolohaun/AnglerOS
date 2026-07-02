@@ -57,25 +57,20 @@ if (-not (Test-Path $WorkDir)) {
 Copy-Item $Config (Join-Path $WorkDir "Marlin\config.ini") -Force
 Write-Host "Copied config.ini -> $WorkDir\Marlin\config.ini" -ForegroundColor Green
 
-# Locate the PlatformIO CLI (PATH, then the VS Code extension's bundled penv).
-$pio = (Get-Command pio -ErrorAction SilentlyContinue).Source
-if (-not $pio) { $pio = (Get-Command platformio -ErrorAction SilentlyContinue).Source }
-if (-not $pio) {
-  $penv = Join-Path $env:USERPROFILE ".platformio\penv\Scripts\platformio.exe"
-  if (Test-Path $penv) { $pio = $penv }
+$py = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $py) { $py = (Get-Command py -ErrorAction SilentlyContinue).Source }
+if (-not $py) { throw "Python is not installed or not on PATH." }
+
+& $py -m platformio --version *> $null
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "Installing PlatformIO (one-time, may take a minute)..." -ForegroundColor Yellow
+  & $py -m pip install --user --upgrade platformio
+  if ($LASTEXITCODE -ne 0) { throw "PlatformIO install failed." }
 }
 
-if (-not $pio) {
-  Write-Host ""
-  Write-Host "PlatformIO CLI not found. Open '$WorkDir' in VS Code, then in the" -ForegroundColor Yellow
-  Write-Host "PlatformIO sidebar build the '$Env' environment. The config.ini is" -ForegroundColor Yellow
-  Write-Host "already in place." -ForegroundColor Yellow
-  return
-}
-
-Write-Host "Building env:$Env with $pio ..." -ForegroundColor Cyan
+Write-Host "Building env:$Env with python -m platformio ..." -ForegroundColor Cyan
 Push-Location $WorkDir
-try { & $pio run -e $Env } finally { Pop-Location }
+try { & $py -m platformio run -e $Env } finally { Pop-Location }
 
 $uf2 = Join-Path $WorkDir ".pio\build\$Env\firmware.uf2"
 if (Test-Path $uf2) {

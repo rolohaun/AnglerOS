@@ -42,24 +42,18 @@ if (-not $py) {
   throw "Python is not installed. Get it from https://www.python.org/downloads/ (tick 'Add Python to PATH'), then re-run."
 }
 
-# PlatformIO: use an existing CLI, the VS Code extension's copy, or pip-install it.
-$pio = (Get-Command pio -ErrorAction SilentlyContinue).Source
-if (-not $pio) {
-  $penv = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\platformio.exe'
-  if (Test-Path $penv) { $pio = $penv }
-}
-$usePyModule = $false
-if (-not $pio) {
+# PlatformIO: invoke it as a Python module on Windows. Some App Control
+# policies block the platformio.exe shim even when the Python module is allowed.
+& $py -m platformio --version *> $null
+if ($LASTEXITCODE -ne 0) {
   Write-Host "Installing PlatformIO (one-time, may take a minute)..." -ForegroundColor Yellow
   & $py -m pip install --user --upgrade platformio
   if ($LASTEXITCODE -ne 0) { throw "PlatformIO install failed." }
-  $usePyModule = $true   # invoke via 'python -m platformio'
 }
 
 function Invoke-Pio {
   param([string[]]$PioArgs)
-  if ($usePyModule) { & $py -m platformio @PioArgs }
-  else { & $pio @PioArgs }
+  & $py -m platformio @PioArgs
 }
 
 # --- Clone Marlin at the required ref (re-clone if it changed) --------------
