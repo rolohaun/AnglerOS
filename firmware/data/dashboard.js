@@ -521,22 +521,31 @@
       const file = uploadInput.files[0];
       if (!file) return;
       const xhr = new XMLHttpRequest();
-      const form = new FormData();
-      form.append('file', file, file.name);
-      xhr.open('POST', '/api/gcode/upload');
+      const startedAt = performance.now();
+      xhr.open('POST', '/api/gcode/upload?name=' + encodeURIComponent(file.name));
+      xhr.setRequestHeader('Content-Type', 'application/octet-stream');
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-          filesStatusEl.textContent = 'Uploading ' + Math.round((e.loaded / e.total) * 100) + '%';
+          const elapsed = Math.max(0.25, (performance.now() - startedAt) / 1000);
+          const speed = e.loaded / elapsed;
+          filesStatusEl.textContent =
+            'Uploading ' + Math.round((e.loaded / e.total) * 100) + '% - ' +
+            fmtBytes(speed) + '/s';
         }
       };
       xhr.onload = () => {
         uploadInput.value = '';
-        if (xhr.status === 200) { filesStatusEl.textContent = 'Uploaded ' + file.name; loadFiles(); }
+        if (xhr.status === 200) {
+          const elapsed = Math.max(0.25, (performance.now() - startedAt) / 1000);
+          filesStatusEl.textContent =
+            'Uploaded ' + file.name + ' - avg ' + fmtBytes(file.size / elapsed) + '/s';
+          loadFiles();
+        }
         else if (xhr.status === 507) filesStatusEl.textContent = 'Not enough storage for ' + file.name;
         else filesStatusEl.textContent = 'Upload failed (' + xhr.status + ')';
       };
       xhr.onerror = () => { filesStatusEl.textContent = 'Upload failed'; uploadInput.value = ''; };
-      xhr.send(form);
+      xhr.send(file);
     });
   }
 

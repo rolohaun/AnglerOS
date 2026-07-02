@@ -143,24 +143,75 @@ static void handleGcodeList(AsyncWebServerRequest *req) {
 
 static File s_upload;
 static bool s_uploadRejected = false;
+static String s_uploadPath;
+static uint8_t s_uploadBuf[16 * 1024];
+static size_t s_uploadBufLen = 0;
+
+static bool uploadFlush() {
+  if (!s_upload || !s_uploadBufLen) return true;
+  size_t expected = s_uploadBufLen;
+  size_t written = s_upload.write(s_uploadBuf, s_uploadBufLen);
+  s_uploadBufLen = 0;
+  return written == expected;
+}
+
+static void uploadWrite(const uint8_t *data, size_t len) {
+  while (!s_uploadRejected && s_upload && len) {
+    size_t room = sizeof(s_uploadBuf) - s_uploadBufLen;
+    size_t n = min(room, len);
+    memcpy(s_uploadBuf + s_uploadBufLen, data, n);
+    s_uploadBufLen += n;
+    data += n;
+    len -= n;
+
+    if (s_uploadBufLen == sizeof(s_uploadBuf) && !uploadFlush()) {
+      s_uploadRejected = true;
+    }
+  }
+}
+
+static void uploadBegin(const String &filename, size_t totalBytes) {
+  s_uploadRejected = false;
+  s_uploadPath = gcodeSanitizeName(filename);
+  s_uploadBufLen = 0;
+
+  // Reject uploads that clearly can't fit (leave ~64KB headroom).
+  if (totalBytes + 65536 > gcodeFreeBytes()) {
+    s_uploadRejected = true;
+    return;
+  }
+
+  s_upload = gcodeCreate(s_uploadPath);
+  if (!s_upload) s_uploadRejected = true;
+}
+
+static void uploadEnd() {
+  if (s_upload) {
+    if (!uploadFlush()) s_uploadRejected = true;
+    s_upload.close();
+  }
+  if (s_uploadRejected && s_uploadPath.length()) gcodeDelete(s_uploadPath);
+  s_uploadPath = "";
+  storageMarkDirty();  // refresh cached free-space numbers from loop()
+}
 
 static void handleGcodeUploadChunk(AsyncWebServerRequest *req, String filename,
                                    size_t index, uint8_t *data, size_t len, bool final) {
   if (index == 0) {
-    s_uploadRejected = false;
-    // Reject uploads that clearly can't fit (leave ~64KB headroom).
-    if (req->contentLength() + 65536 > gcodeFreeBytes()) {
-      s_uploadRejected = true;
-    } else {
-      s_upload = gcodeCreate(filename);
-      if (!s_upload) s_uploadRejected = true;
-    }
+    uploadBegin(filename, req->contentLength());
   }
-  if (!s_uploadRejected && s_upload) s_upload.write(data, len);
-  if (final && s_upload) {
-    s_upload.close();
-    storageMarkDirty();  // refresh cached free-space numbers from loop()
+  uploadWrite(data, len);
+  if (final) uploadEnd();
+}
+
+static void handleGcodeUploadBody(AsyncWebServerRequest *req, uint8_t *data,
+                                  size_t len, size_t index, size_t total) {
+  if (index == 0) {
+    String filename = req->hasParam("name") ? req->getParam("name")->value() : "upload.gcode";
+    uploadBegin(filename, total);
   }
+  uploadWrite(data, len);
+  if (index + len == total) uploadEnd();
 }
 
 static void handleGcodeUploadDone(AsyncWebServerRequest *req) {
@@ -276,7 +327,8 @@ void webServerBegin(const char *fwVersion) {
 
   // G-code file management + print control.
   server.on("/api/gcode/list", HTTP_GET, handleGcodeList);
-  server.on("/api/gcode/upload", HTTP_POST, handleGcodeUploadDone, handleGcodeUploadChunk);
+  server.on("/api/gcode/upload", HTTP_POST, handleGcodeUploadDone,
+            handleGcodeUploadChunk, handleGcodeUploadBody);
   server.on("/api/gcode/delete", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!req->hasParam("name", true)) {
       req->send(400, "application/json", "{\"ok\":false,\"err\":\"name required\"}");
