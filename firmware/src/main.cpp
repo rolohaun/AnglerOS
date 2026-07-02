@@ -90,12 +90,6 @@ void setup() {
   }
   gcodeStoreBegin();
 
-  if (cameraBegin()) {
-    Serial.println("[cam] camera ready");
-  } else {
-    Serial.println("[cam] no camera");
-  }
-
   improvSerial.setDeviceInfo(IMPROV_CHIP, "AnglerOS",
                              FW_VERSION, "AnglerOS", "http://{LOCAL_IPV4}");
   improvSerial.onImprovConnected(onImprovConnected);
@@ -120,6 +114,15 @@ void setup() {
                    "\"Connect to Wi-Fi\".");
     Serial.printf("[setup]  2) Or join the \"%s\" hotspot and open http://%s/\n",
                   AP_SSID, WiFi.softAPIP().toString().c_str());
+  }
+
+  // Camera last-but-one: its MJPEG server opens sockets, which needs the
+  // TCP/IP stack that WiFi.mode() above brought up (starting it earlier
+  // crashes lwIP with "Invalid mbox" and boot-loops).
+  if (cameraBegin()) {
+    Serial.println("[cam] camera ready");
+  } else {
+    Serial.println("[cam] no camera");
   }
 
   // UART link on boards wired for it; USB-OTG host on boards with a dedicated
