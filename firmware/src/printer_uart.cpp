@@ -1,4 +1,5 @@
 #include "printer_uart.h"
+#include "driver/gpio.h"
 
 #if defined(ANGLEROS_BOARD_CAM)
 // ESP32-CAM UART to the printer. RX stays on GPIO13; TX uses GPIO12 so SD_MMC
@@ -20,6 +21,9 @@ static bool s_started = false;
 void printerUartBegin(uint32_t baud) {
   if (PIN_RX < 0 || PIN_TX < 0) return;  // board has no printer UART
   PSER.begin(baud, SERIAL_8N1, PIN_RX, PIN_TX);
+  // Idle the RX line high when nothing is wired to it — a floating pin picks
+  // up noise that turns into junk "printer output" broadcast to the browser.
+  gpio_set_pull_mode((gpio_num_t)PIN_RX, GPIO_PULLUP_ONLY);
   s_buf.reserve(128);
   s_started = true;
 }
@@ -41,7 +45,7 @@ void printerUartPump() {
     if (c == '\n') {
       if (s_buf.length() && s_onLine) s_onLine(s_buf);
       s_buf = "";
-    } else if (c != '\r') {
+    } else if (c >= 32 && c < 127) {  // printable ASCII only: drop line noise
       s_buf += c;
       if (s_buf.length() > 512) s_buf = "";  // runaway guard
     }

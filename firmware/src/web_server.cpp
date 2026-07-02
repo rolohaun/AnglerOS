@@ -145,7 +145,10 @@ static void handleGcodeUploadChunk(AsyncWebServerRequest *req, String filename,
     }
   }
   if (!s_uploadRejected && s_upload) s_upload.write(data, len);
-  if (final && s_upload) s_upload.close();
+  if (final && s_upload) {
+    s_upload.close();
+    storageMarkDirty();  // refresh cached free-space numbers from loop()
+  }
 }
 
 static void handleGcodeUploadDone(AsyncWebServerRequest *req) {
@@ -273,6 +276,7 @@ void webServerBegin(const char *fwVersion) {
       return;
     }
     bool ok = gcodeDelete(name);
+    if (ok) storageMarkDirty();
     req->send(ok ? 200 : 404, "application/json",
               ok ? "{\"ok\":true}" : "{\"ok\":false,\"err\":\"not found\"}");
   });

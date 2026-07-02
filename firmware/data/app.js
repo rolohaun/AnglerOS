@@ -155,6 +155,9 @@
     title.textContent = views[view] || view;
     try { localStorage.setItem('angleros.view', view); } catch (e) {}
     window.dispatchEvent(new CustomEvent('angleros:view', { detail: { view } }));
+    // Refresh device data immediately instead of waiting up to 3s for the
+    // next poll cycle (poll is hoisted; defined below).
+    if (view === 'system') { try { poll(); } catch (e) {} }
   }
 
   navItems.forEach((n) => n.addEventListener('click', () => show(n.dataset.view)));

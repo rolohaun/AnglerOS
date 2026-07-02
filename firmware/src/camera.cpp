@@ -53,11 +53,10 @@ static bool s_cameraOk = false;
 static bool s_psram = false;
 static httpd_handle_t s_httpd = nullptr;
 
-// Defaults chosen for a fluid stream on a busy ESP32: VGA at a lighter JPEG
-// quality (roughly half the bytes of q12-14) with a 15 fps cap. Frame buffers
-// are allocated at SVGA so the user can go up to SVGA at runtime without
-// re-initialising the driver.
-static CameraSettings s_settings = {8 /*VGA*/, 18, 15, true, false};
+// Defaults: VGA at sharp JPEG quality (q12) with a 10 fps cap — ~300KB/s,
+// within the ESP32's comfortable Wi-Fi TX budget. Frame buffers are allocated
+// at SVGA so the user can go up to SVGA at runtime without re-init.
+static CameraSettings s_settings = {8 /*VGA*/, 12, 10, true, false};
 static const char *SETTINGS_PATH = "/camera.json";
 
 static void loadSettings() {

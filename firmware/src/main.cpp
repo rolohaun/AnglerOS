@@ -138,6 +138,7 @@ void setup() {
 
 void loop() {
   systemMetricsTick();
+  storageMetricsTick();
   improvSerial.handleSerial();
   printerLinkPump();
   printJobPump();

@@ -49,7 +49,30 @@ bool storageSdMounted() { return s_sdMounted; }
 const char *storageSdStatus() { return s_sdStatus; }
 const char *storageSdType() { return s_sdType; }
 
-uint64_t storageLittleFsTotal() { return LittleFS.totalBytes(); }
-uint64_t storageLittleFsUsed() { return LittleFS.usedBytes(); }
-uint64_t storageSdTotal() { return s_sdMounted ? SD_MMC.totalBytes() : 0; }
-uint64_t storageSdUsed() { return s_sdMounted ? SD_MMC.usedBytes() : 0; }
+// Cached capacity numbers. usedBytes()/totalBytes() walk filesystem metadata —
+// LittleFS scans its blocks and FAT free-space scans on SD can take seconds —
+// so they must never run inside a web request. loop() refreshes the cache.
+static uint64_t s_lfsTotal = 0, s_lfsUsed = 0, s_sdTotal = 0, s_sdUsed = 0;
+static uint32_t s_lastRefreshMs = 0;
+static bool s_dirty = true;
+static const uint32_t REFRESH_MS = 30000;
+
+static void refreshMetrics() {
+  s_lfsTotal = LittleFS.totalBytes();
+  s_lfsUsed = LittleFS.usedBytes();
+  s_sdTotal = s_sdMounted ? SD_MMC.totalBytes() : 0;
+  s_sdUsed = s_sdMounted ? SD_MMC.usedBytes() : 0;
+  s_lastRefreshMs = millis();
+  s_dirty = false;
+}
+
+void storageMetricsTick() {
+  if (s_dirty || millis() - s_lastRefreshMs > REFRESH_MS) refreshMetrics();
+}
+
+void storageMarkDirty() { s_dirty = true; }
+
+uint64_t storageLittleFsTotal() { return s_lfsTotal; }
+uint64_t storageLittleFsUsed() { return s_lfsUsed; }
+uint64_t storageSdTotal() { return s_sdTotal; }
+uint64_t storageSdUsed() { return s_sdUsed; }
