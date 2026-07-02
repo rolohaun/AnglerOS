@@ -576,7 +576,9 @@
   window.addEventListener('angleros:status', (e) => {
     const s = e.detail || {};
     updateJob(s.print);
-    if (!camInitDone && typeof s.camera === 'boolean') {
+    if (typeof s.camera !== 'boolean') return;
+
+    if (!camInitDone) {
       camInitDone = true;
       camAvailable = s.camera;
       camToggle.disabled = !camAvailable;
@@ -584,6 +586,17 @@
       // Defer auto-start so the stream doesn't compete with the page's own
       // assets for the ESP32's limited Wi-Fi throughput while loading.
       if (camAvailable) setTimeout(() => { if (!camRunning) setCamRunning(true); }, 1500);
+      return;
+    }
+
+    // Track camera enable/disable done from the System tab without a reload.
+    if (s.camera !== camAvailable) {
+      camAvailable = s.camera;
+      camToggle.disabled = !camAvailable;
+      camStatus.textContent = camAvailable ? 'Live view + print light (Flash LED panel)' : 'Camera disabled in System tab';
+      if (!camAvailable && camRunning) setCamRunning(false);
+      else if (camAvailable && !camRunning) setCamRunning(true);
+      else setCamRunning(camRunning);
     }
   });
 

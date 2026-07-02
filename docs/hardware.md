@@ -47,10 +47,19 @@ Logic levels are 3.3V on both sides - no level shifter needed. Do **not**
 back-power the mainboard from the ESP32; power each board from its own supply
 and share only GND + the two UART lines.
 
-> **Printer side:** the ESP32 must connect to a UART that Marlin exposes as a
-> serial port at the matching baud. On the SKR Pico use the board's serial/TFT
-> header; the Marlin config's `SERIAL_PORT` (or a `SERIAL_PORT_2`) must map to
-> it. A future AnglerOS config option will set this up automatically.
+> **Printer side (SKR Pico):** AnglerOS's generated Marlin config sets
+> `SERIAL_PORT = -1` (USB) **and** `SERIAL_PORT_2 = 0` (UART0 = the **TFT
+> header**), so both links work out of the box. Wiring for the ESP32-CAM:
+>
+> | ESP32-CAM | SKR Pico TFT header |
+> |-----------|---------------------|
+> | GPIO 12 (TX) | RX |
+> | GPIO 13 (RX) | TX |
+> | GND | GND |
+>
+> Baud is **250000** on both sides (Marlin's default `BAUDRATE` covers port 2).
+> Do not connect the TFT header's 5V pin. Rebuild + reflash Marlin with a fresh
+> config so `SERIAL_PORT_2` is present before testing.
 
 ## ESP32-S3-CAM: USB-OTG printer link (OctoPrint-style)
 

@@ -57,6 +57,7 @@ static httpd_handle_t s_httpd = nullptr;
 // within the ESP32's comfortable Wi-Fi TX budget. Frame buffers are allocated
 // at SVGA so the user can go up to SVGA at runtime without re-init.
 static CameraSettings s_settings = {8 /*VGA*/, 12, 10, true, false};
+static bool s_enabled = true;  // user preference, persisted
 static const char *SETTINGS_PATH = "/camera.json";
 
 static void loadSettings() {
@@ -69,6 +70,7 @@ static void loadSettings() {
     s_settings.fps = doc["fps"] | s_settings.fps;
     s_settings.vflip = doc["vflip"] | s_settings.vflip;
     s_settings.hmirror = doc["hmirror"] | s_settings.hmirror;
+    s_enabled = doc["enabled"] | s_enabled;
   }
   f.close();
 }
@@ -82,6 +84,7 @@ static void saveSettings() {
   doc["fps"] = s_settings.fps;
   doc["vflip"] = s_settings.vflip;
   doc["hmirror"] = s_settings.hmirror;
+  doc["enabled"] = s_enabled;
   serializeJson(doc, f);
   f.close();
 }
@@ -89,20 +92,21 @@ static void saveSettings() {
 CameraSettings cameraGetSettings() { return s_settings; }
 
 bool cameraApplySettings(CameraSettings s, bool persist) {
-  if (!s_cameraOk) return false;
-
   // Clamp: buffers are allocated at SVGA (QVGA without PSRAM).
   uint8_t maxSize = s_psram ? 9 /*SVGA*/ : 5 /*QVGA*/;
   s.framesize = constrain(s.framesize, (uint8_t)5, maxSize);
   s.quality = constrain(s.quality, (uint8_t)10, (uint8_t)40);
   if (s.fps > 30) s.fps = 30;
 
-  sensor_t *sensor = esp_camera_sensor_get();
-  if (!sensor) return false;
-  sensor->set_framesize(sensor, (framesize_t)s.framesize);
-  sensor->set_quality(sensor, s.quality);
-  sensor->set_vflip(sensor, s.vflip ? 1 : 0);
-  sensor->set_hmirror(sensor, s.hmirror ? 1 : 0);
+  if (s_cameraOk) {
+    sensor_t *sensor = esp_camera_sensor_get();
+    if (!sensor) return false;
+    sensor->set_framesize(sensor, (framesize_t)s.framesize);
+    sensor->set_quality(sensor, s.quality);
+    sensor->set_vflip(sensor, s.vflip ? 1 : 0);
+    sensor->set_hmirror(sensor, s.hmirror ? 1 : 0);
+  }
+  // When the camera is disabled, values are stored and applied on next enable.
 
   s_settings = s;
   if (persist) saveSettings();
@@ -179,7 +183,7 @@ static void startStreamServer() {
   Serial.printf("[cam] MJPEG stream on :%u/stream\n", STREAM_PORT);
 }
 
-bool cameraBegin() {
+static bool startCamera() {
   camera_config_t config = {};
   config.ledc_channel = LEDC_CHANNEL_0;
   config.ledc_timer = LEDC_TIMER_0;
@@ -230,18 +234,55 @@ bool cameraBegin() {
   }
 
   s_cameraOk = true;
-  loadSettings();
   cameraApplySettings(s_settings, false);  // clamp + apply persisted prefs
   startStreamServer();
   return true;
 }
 
+static void stopCamera() {
+  if (s_httpd) {
+    httpd_stop(s_httpd);
+    s_httpd = nullptr;
+  }
+  if (s_cameraOk) {
+    esp_camera_deinit();  // frees the PSRAM frame buffers
+    s_cameraOk = false;
+  }
+}
+
+bool cameraBegin() {
+  loadSettings();
+  if (!s_enabled) {
+    Serial.println("[cam] disabled by user setting");
+    return false;
+  }
+  return startCamera();
+}
+
 bool cameraAvailable() { return s_cameraOk; }
+bool cameraSupported() { return true; }
+bool cameraEnabled() { return s_enabled; }
+
+bool cameraSetEnabled(bool on) {
+  if (on == s_enabled && on == s_cameraOk) {
+    s_enabled = on;
+    saveSettings();
+    return true;
+  }
+  s_enabled = on;
+  saveSettings();
+  if (on) return startCamera();
+  stopCamera();
+  return true;
+}
 
 #else  // boards without a camera
 
 bool cameraBegin() { return false; }
 bool cameraAvailable() { return false; }
+bool cameraSupported() { return false; }
+bool cameraEnabled() { return false; }
+bool cameraSetEnabled(bool) { return false; }
 CameraSettings cameraGetSettings() { return CameraSettings{}; }
 bool cameraApplySettings(CameraSettings, bool) { return false; }
 

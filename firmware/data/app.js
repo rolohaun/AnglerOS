@@ -253,6 +253,7 @@
 
   // --- Camera settings (System tab) ---
   const camPanel = document.getElementById('camera-settings');
+  const camEnabled = document.getElementById('cam-enabled');
   const camRes = document.getElementById('cam-res');
   const camFps = document.getElementById('cam-fps');
   const camQuality = document.getElementById('cam-quality');
@@ -267,7 +268,11 @@
     if (camQualityLabel) camQualityLabel.textContent = '(' + camQuality.value + ')';
   }
 
-  async function saveCameraSettings() {
+  function camControlsEnabled(on) {
+    [camRes, camFps, camQuality, camVflip, camHmirror].forEach((el) => { el.disabled = !on; });
+  }
+
+  async function saveCameraSettings(includeEnabled) {
     if (camSetStatus) camSetStatus.textContent = 'Applying...';
     try {
       const body = new URLSearchParams({
@@ -277,13 +282,18 @@
         vflip: camVflip.checked ? '1' : '0',
         hmirror: camHmirror.checked ? '1' : '0',
       });
+      if (includeEnabled) body.set('enabled', camEnabled.checked ? '1' : '0');
       const r = await fetch('/api/camera', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body,
       });
       if (!r.ok) throw new Error(r.status);
-      if (camSetStatus) camSetStatus.textContent = 'Applied - takes effect on the live stream immediately.';
+      if (camSetStatus) {
+        camSetStatus.textContent = camEnabled.checked
+          ? 'Applied - takes effect on the live stream immediately.'
+          : 'Camera disabled.';
+      }
     } catch (e) {
       if (camSetStatus) camSetStatus.textContent = 'Could not apply settings.';
     }
@@ -291,25 +301,32 @@
 
   function queueCameraSave() {
     clearTimeout(camSaveTimer);
-    camSaveTimer = setTimeout(saveCameraSettings, 250);
+    camSaveTimer = setTimeout(() => saveCameraSettings(false), 250);
   }
 
   async function initCameraSettings(hasCamera) {
     if (camSettingsLoaded || !camPanel) return;
-    if (hasCamera === false) { camPanel.hidden = true; return; }
-    if (!hasCamera) return;
+    if (hasCamera === undefined) return;  // wait for a status payload
     camSettingsLoaded = true;
     try {
       const r = await fetch('/api/camera', { cache: 'no-store' });
       const s = await r.json();
-      if (!s.available) { camPanel.hidden = true; return; }
+      // The panel shows whenever the board has camera hardware, even while
+      // the camera is switched off — that's where you switch it back on.
+      if (!s.supported) { camPanel.hidden = true; return; }
+      camEnabled.checked = !!s.enabled;
       camRes.value = String(s.framesize);
       camFps.value = String(s.fps);
       camQuality.value = s.quality;
       camVflip.checked = !!s.vflip;
       camHmirror.checked = !!s.hmirror;
       camQualityText();
+      camControlsEnabled(!!s.enabled);
       camPanel.hidden = false;
+      camEnabled.addEventListener('change', () => {
+        camControlsEnabled(camEnabled.checked);
+        saveCameraSettings(true);
+      });
       [camRes, camFps, camVflip, camHmirror].forEach((el) =>
         el.addEventListener('change', queueCameraSave));
       camQuality.addEventListener('input', camQualityText);

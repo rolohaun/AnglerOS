@@ -74,6 +74,8 @@ static void handleStatus(AsyncWebServerRequest *req) {
 static void handleCameraGet(AsyncWebServerRequest *req) {
   JsonDocument doc;
   doc["available"] = cameraAvailable();
+  doc["supported"] = cameraSupported();
+  doc["enabled"] = cameraEnabled();
   CameraSettings s = cameraGetSettings();
   doc["framesize"] = s.framesize;
   doc["quality"] = s.quality;
@@ -86,19 +88,29 @@ static void handleCameraGet(AsyncWebServerRequest *req) {
 }
 
 static void handleCameraSet(AsyncWebServerRequest *req) {
-  CameraSettings s = cameraGetSettings();
+  if (!cameraSupported()) {
+    req->send(503, "application/json", "{\"ok\":false,\"err\":\"no camera\"}");
+    return;
+  }
   auto intParam = [&](const char *name, int fallback) {
     return req->hasParam(name, true) ? req->getParam(name, true)->value().toInt() : fallback;
   };
+
+  bool ok = true;
+  if (req->hasParam("enabled", true)) {
+    ok = cameraSetEnabled(intParam("enabled", 1) != 0);
+  }
+
+  CameraSettings s = cameraGetSettings();
   s.framesize = (uint8_t)intParam("framesize", s.framesize);
   s.quality = (uint8_t)intParam("quality", s.quality);
   s.fps = (uint8_t)intParam("fps", s.fps);
   s.vflip = intParam("vflip", s.vflip) != 0;
   s.hmirror = intParam("hmirror", s.hmirror) != 0;
+  ok = cameraApplySettings(s, /*persist=*/true) && ok;
 
-  bool ok = cameraApplySettings(s, /*persist=*/true);
   req->send(ok ? 200 : 503, "application/json",
-            ok ? "{\"ok\":true}" : "{\"ok\":false,\"err\":\"no camera\"}");
+            ok ? "{\"ok\":true}" : "{\"ok\":false,\"err\":\"camera failed to start\"}");
 }
 
 // ---- G-code files + print control ------------------------------------------

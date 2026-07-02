@@ -176,6 +176,11 @@
     if (board.serial_port !== undefined && board.serial_port !== null) {
       lines.push(`SERIAL_PORT = ${board.serial_port}`);
     }
+    // Second port for the AnglerOS wired UART link (e.g. SKR Pico TFT header),
+    // so the ESP32 gets its own connection alongside USB.
+    if (board.serial_port_2 !== undefined && board.serial_port_2 !== null) {
+      lines.push(`SERIAL_PORT_2 = ${board.serial_port_2}`);
+    }
     if (kin === 'corexy') lines.push('COREXY = on');
     lines.push('');
 
