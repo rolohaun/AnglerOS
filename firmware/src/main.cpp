@@ -13,10 +13,16 @@
 
 #include "settings_store.h"
 #include "web_server.h"
-#include "printer_uart.h"
+#include "printer_link.h"
 #include "system_metrics.h"
 #include "storage_metrics.h"
 #include "flash_led.h"
+
+#if CONFIG_IDF_TARGET_ESP32S3
+static const ImprovTypes::ChipFamily IMPROV_CHIP = ImprovTypes::ChipFamily::CF_ESP32_S3;
+#else
+static const ImprovTypes::ChipFamily IMPROV_CHIP = ImprovTypes::ChipFamily::CF_ESP32;
+#endif
 
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
@@ -80,7 +86,7 @@ void setup() {
     Serial.printf("[sd] %s\n", storageSdStatus());
   }
 
-  improvSerial.setDeviceInfo(ImprovTypes::ChipFamily::CF_ESP32, "AnglerOS",
+  improvSerial.setDeviceInfo(IMPROV_CHIP, "AnglerOS",
                              FW_VERSION, "AnglerOS", "http://{LOCAL_IPV4}");
   improvSerial.onImprovConnected(onImprovConnected);
   improvSerial.onImprovError(onImprovError);
@@ -106,7 +112,9 @@ void setup() {
                   AP_SSID, WiFi.softAPIP().toString().c_str());
   }
 
-  printerUartBegin(PRINTER_BAUD);
+  // UART link on boards wired for it; USB-OTG host on boards with a dedicated
+  // OTG port (ESP32-S3-CAM — console/Improv stay on the CH340 port).
+  printerLinkBegin(PRINTER_BAUD, /*startUsbHost=*/true);
   webServerBegin(FW_VERSION);
   Serial.println("[web] server started");
 }
@@ -114,7 +122,7 @@ void setup() {
 void loop() {
   systemMetricsTick();
   improvSerial.handleSerial();
-  printerUartPump();
+  printerLinkPump();
 
   if (webServerPendingRestart()) {
     Serial.println("[wifi] credentials saved, rebooting...");

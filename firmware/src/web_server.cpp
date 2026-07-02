@@ -1,9 +1,13 @@
 #include "web_server.h"
 #include "settings_store.h"
-#include "printer_uart.h"
+#include "printer_link.h"
 #include "system_metrics.h"
 #include "storage_metrics.h"
 #include "flash_led.h"
+
+#ifndef ANGLEROS_BOARD_NAME
+#define ANGLEROS_BOARD_NAME "ESP32"
+#endif
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -20,7 +24,7 @@ bool webServerPendingRestart() { return s_pendingRestart; }
 static void handleStatus(AsyncWebServerRequest *req) {
   JsonDocument doc;
   doc["fw"] = s_fwVersion;
-  doc["chip"] = "ESP32";
+  doc["chip"] = ANGLEROS_BOARD_NAME;
 
   bool sta = (WiFi.getMode() & WIFI_MODE_STA) && WiFi.status() == WL_CONNECTED;
   doc["mode"] = sta ? "sta" : "ap";
@@ -36,7 +40,8 @@ static void handleStatus(AsyncWebServerRequest *req) {
   doc["cpu_load"] = systemCpuLoadPercent();
   doc["cpu_freq_mhz"] = getCpuFrequencyMhz();
   doc["uptime"] = (uint32_t)(millis() / 1000);
-  doc["printer_uart"] = printerUartAvailable();
+  doc["printer_uart"] = printerLinkAvailable();
+  doc["printer_link"] = printerLinkActive();
   doc["fs_used"] = storageLittleFsUsed();
   doc["fs_total"] = storageLittleFsTotal();
   doc["sd_mounted"] = storageSdMounted();
@@ -100,7 +105,7 @@ static void onWsEvent(AsyncWebSocket *, AsyncWebSocketClient *, AwsEventType typ
   msg.reserve(len);
   for (size_t i = 0; i < len; i++) msg += (char)data[i];
   msg.trim();
-  if (msg.length()) printerSend(msg);
+  if (msg.length()) printerLinkSend(msg);
 }
 
 void webServerBegin(const char *fwVersion) {
@@ -108,7 +113,7 @@ void webServerBegin(const char *fwVersion) {
 
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
-  printerUartOnLine(&broadcastPrinterLine);
+  printerLinkOnLine(&broadcastPrinterLine);
 
   server.on("/api/status", HTTP_GET, handleStatus);
   server.on("/api/wifi", HTTP_POST, handleWifiSave);

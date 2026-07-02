@@ -66,7 +66,7 @@
     <label for="board">Your board</label>
     <select id="board">
       <option value="esp32cam" selected>ESP32-CAM (AI-Thinker / Aideepen)</option>
-      <!-- Future: ESP32-S3 target (see project roadmap) -->
+      <option value="esp32s3cam">ESP32-S3-CAM (dual USB-C, USB-OTG printer link)</option>
     </select>
 
     <div class="install">
@@ -78,7 +78,9 @@
       Requires <strong>Chrome</strong> or <strong>Edge</strong>. Plug the ESP32
       into your PC <strong>over USB</strong>, click <em>Connect</em>, then
       <em>Install</em>. If flashing doesn't start, hold the <code>IO0</code>
-      button while connecting to enter the bootloader.
+      (BOOT) button while connecting to enter the bootloader.
+      <br/><strong>ESP32-S3-CAM:</strong> it has two USB-C ports — flash via the
+      <strong>UART/CH340 port</strong>; the other (OTG) port is for the printer.
     </p>
 
     <details class="after" open>

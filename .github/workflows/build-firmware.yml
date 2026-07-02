@@ -34,14 +34,20 @@ jobs:
       - name: Install PlatformIO + esptool
         run: pip install --upgrade platformio "esptool>=4.7,<5"
 
-      - name: Build firmware + LittleFS image
+      - name: Build firmware + LittleFS images (both boards)
         working-directory: firmware
         run: |
           pio run -e esp32cam
           pio run -e esp32cam -t buildfs
+          pio run -e esp32s3cam
+          pio run -e esp32s3cam -t buildfs
 
-      - name: Merge into a single flash image
-        run: python scripts/merge_bin.py --env esp32cam --out pages/firmware/angleros-esp32cam.bin
+      - name: Merge into single flash images
+        run: |
+          python scripts/merge_bin.py --env esp32cam --chip esp32 --flash-size 4MB \
+            --fs-offset 0x310000 --out pages/firmware/angleros-esp32cam.bin
+          python scripts/merge_bin.py --env esp32s3cam --chip esp32s3 --flash-size 16MB \
+            --fs-offset 0xc90000 --out pages/firmware/angleros-esp32s3cam.bin
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

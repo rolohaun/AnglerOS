@@ -17,6 +17,11 @@ static const char *cardTypeName(uint8_t type) {
 }
 
 void storageBegin() {
+#if defined(ANGLEROS_BOARD_S3CAM)
+  // ESP32-S3-CAM TF slot: CLK=39, CMD=38, D0=40 (1-bit). The S3's SD_MMC pins
+  // are muxable and must be set before begin().
+  SD_MMC.setPins(39, 38, 40);
+#endif
   // ESP32-CAM SD_MMC one-bit mode uses GPIO14/15/2. GPIO14 is also the default
   // printer UART TX, so main.cpp skips that UART when a card is mounted.
   if (!SD_MMC.begin("/sdcard", /*mode1bit=*/true)) {

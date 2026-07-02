@@ -1,0 +1,15 @@
+{
+  "name": "AnglerOS (ESP32-S3-CAM)",
+  "version": "0.0.0-dev",
+  "home_assistant_domain": "",
+  "new_install_prompt_erase": true,
+  "new_install_improv_wait_time": 15,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        { "path": "firmware/angleros-esp32s3cam.bin", "offset": 0 }
+      ]
+    }
+  ]
+}
