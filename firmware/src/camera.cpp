@@ -4,6 +4,8 @@
 
 #include "esp_camera.h"
 #include "esp_http_server.h"
+#include <LittleFS.h>
+#include <ArduinoJson.h>
 
 // The MJPEG stream runs on its own tiny HTTP server (port 81) because
 // multipart streaming doesn't fit ESPAsyncWebServer's response model.
@@ -48,7 +50,64 @@ static const uint16_t STREAM_PORT = 81;
 #endif
 
 static bool s_cameraOk = false;
+static bool s_psram = false;
 static httpd_handle_t s_httpd = nullptr;
+
+// Defaults chosen for a fluid stream on a busy ESP32: VGA, modest quality,
+// 10 fps cap. Frame buffers are allocated at SVGA so the user can go up to
+// SVGA at runtime without re-initialising the driver.
+static CameraSettings s_settings = {8 /*VGA*/, 14, 10, true, false};
+static const char *SETTINGS_PATH = "/camera.json";
+
+static void loadSettings() {
+  File f = LittleFS.open(SETTINGS_PATH, "r");
+  if (!f) return;
+  JsonDocument doc;
+  if (deserializeJson(doc, f) == DeserializationError::Ok) {
+    s_settings.framesize = doc["framesize"] | s_settings.framesize;
+    s_settings.quality = doc["quality"] | s_settings.quality;
+    s_settings.fps = doc["fps"] | s_settings.fps;
+    s_settings.vflip = doc["vflip"] | s_settings.vflip;
+    s_settings.hmirror = doc["hmirror"] | s_settings.hmirror;
+  }
+  f.close();
+}
+
+static void saveSettings() {
+  File f = LittleFS.open(SETTINGS_PATH, "w");
+  if (!f) return;
+  JsonDocument doc;
+  doc["framesize"] = s_settings.framesize;
+  doc["quality"] = s_settings.quality;
+  doc["fps"] = s_settings.fps;
+  doc["vflip"] = s_settings.vflip;
+  doc["hmirror"] = s_settings.hmirror;
+  serializeJson(doc, f);
+  f.close();
+}
+
+CameraSettings cameraGetSettings() { return s_settings; }
+
+bool cameraApplySettings(CameraSettings s, bool persist) {
+  if (!s_cameraOk) return false;
+
+  // Clamp: buffers are allocated at SVGA (QVGA without PSRAM).
+  uint8_t maxSize = s_psram ? 9 /*SVGA*/ : 5 /*QVGA*/;
+  s.framesize = constrain(s.framesize, (uint8_t)5, maxSize);
+  s.quality = constrain(s.quality, (uint8_t)10, (uint8_t)40);
+  if (s.fps > 30) s.fps = 30;
+
+  sensor_t *sensor = esp_camera_sensor_get();
+  if (!sensor) return false;
+  sensor->set_framesize(sensor, (framesize_t)s.framesize);
+  sensor->set_quality(sensor, s.quality);
+  sensor->set_vflip(sensor, s.vflip ? 1 : 0);
+  sensor->set_hmirror(sensor, s.hmirror ? 1 : 0);
+
+  s_settings = s;
+  if (persist) saveSettings();
+  return true;
+}
 
 static const char *STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=frame";
 static const char *STREAM_BOUNDARY = "\r\n--frame\r\n";
@@ -60,7 +119,16 @@ static esp_err_t streamHandler(httpd_req_t *req) {
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
   char part[64];
+  uint32_t lastFrame = 0;
   for (;;) {
+    // fps cap: bound Wi-Fi bandwidth so the stream can't starve the web UI.
+    if (s_settings.fps) {
+      uint32_t interval = 1000 / s_settings.fps;
+      uint32_t since = millis() - lastFrame;
+      if (since < interval) vTaskDelay(pdMS_TO_TICKS(interval - since));
+    }
+    lastFrame = millis();
+
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
       res = ESP_FAIL;
@@ -97,6 +165,8 @@ static void startStreamServer() {
   config.ctrl_port = 32769;      // keep clear of other httpd instances
   config.max_open_sockets = 3;   // stream viewers are few
   config.lru_purge_enable = true;
+  // Run below the async web server's task so streaming can't make the UI lag.
+  config.task_priority = 2;
 
   if (httpd_start(&s_httpd, &config) != ESP_OK) {
     Serial.println("[cam] stream server failed to start");
@@ -133,8 +203,10 @@ bool cameraBegin() {
   config.pixel_format = PIXFORMAT_JPEG;
   config.grab_mode = CAMERA_GRAB_LATEST;
 
-  if (psramFound()) {
-    config.frame_size = FRAMESIZE_SVGA;  // 800x600 — fluid stream, decent detail
+  s_psram = psramFound();
+  if (s_psram) {
+    // Allocate for SVGA so runtime settings can range QVGA..SVGA.
+    config.frame_size = FRAMESIZE_SVGA;
     config.jpeg_quality = 12;
     config.fb_count = 2;
     config.fb_location = CAMERA_FB_IN_PSRAM;
@@ -151,15 +223,15 @@ bool cameraBegin() {
     return false;
   }
 
-  // OV3660 renders upside-down on these boards by default.
   sensor_t *s = esp_camera_sensor_get();
   if (s && s->id.PID == OV3660_PID) {
-    s->set_vflip(s, 1);
     s->set_brightness(s, 1);
     s->set_saturation(s, -1);
   }
 
   s_cameraOk = true;
+  loadSettings();
+  cameraApplySettings(s_settings, false);  // clamp + apply persisted prefs
   startStreamServer();
   return true;
 }
@@ -170,5 +242,7 @@ bool cameraAvailable() { return s_cameraOk; }
 
 bool cameraBegin() { return false; }
 bool cameraAvailable() { return false; }
+CameraSettings cameraGetSettings() { return CameraSettings{}; }
+bool cameraApplySettings(CameraSettings, bool) { return false; }
 
 #endif

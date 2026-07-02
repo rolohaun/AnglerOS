@@ -248,6 +248,74 @@
     setText('sys-network', network + (s.printer_uart === false ? ' / UART unavailable' : ''));
   }
 
+  // --- Camera settings (System tab) ---
+  const camPanel = document.getElementById('camera-settings');
+  const camRes = document.getElementById('cam-res');
+  const camFps = document.getElementById('cam-fps');
+  const camQuality = document.getElementById('cam-quality');
+  const camQualityLabel = document.getElementById('cam-quality-label');
+  const camVflip = document.getElementById('cam-vflip');
+  const camHmirror = document.getElementById('cam-hmirror');
+  const camSetStatus = document.getElementById('cam-set-status');
+  let camSettingsLoaded = false;
+  let camSaveTimer = null;
+
+  function camQualityText() {
+    if (camQualityLabel) camQualityLabel.textContent = '(' + camQuality.value + ')';
+  }
+
+  async function saveCameraSettings() {
+    if (camSetStatus) camSetStatus.textContent = 'Applying...';
+    try {
+      const body = new URLSearchParams({
+        framesize: camRes.value,
+        fps: camFps.value,
+        quality: camQuality.value,
+        vflip: camVflip.checked ? '1' : '0',
+        hmirror: camHmirror.checked ? '1' : '0',
+      });
+      const r = await fetch('/api/camera', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body,
+      });
+      if (!r.ok) throw new Error(r.status);
+      if (camSetStatus) camSetStatus.textContent = 'Applied - takes effect on the live stream immediately.';
+    } catch (e) {
+      if (camSetStatus) camSetStatus.textContent = 'Could not apply settings.';
+    }
+  }
+
+  function queueCameraSave() {
+    clearTimeout(camSaveTimer);
+    camSaveTimer = setTimeout(saveCameraSettings, 250);
+  }
+
+  async function initCameraSettings(hasCamera) {
+    if (camSettingsLoaded || !camPanel) return;
+    if (hasCamera === false) { camPanel.hidden = true; return; }
+    if (!hasCamera) return;
+    camSettingsLoaded = true;
+    try {
+      const r = await fetch('/api/camera', { cache: 'no-store' });
+      const s = await r.json();
+      if (!s.available) { camPanel.hidden = true; return; }
+      camRes.value = String(s.framesize);
+      camFps.value = String(s.fps);
+      camQuality.value = s.quality;
+      camVflip.checked = !!s.vflip;
+      camHmirror.checked = !!s.hmirror;
+      camQualityText();
+      camPanel.hidden = false;
+      [camRes, camFps, camVflip, camHmirror].forEach((el) =>
+        el.addEventListener('change', queueCameraSave));
+      camQuality.addEventListener('input', camQualityText);
+      camQuality.addEventListener('change', queueCameraSave);
+    } catch (e) {
+      camSettingsLoaded = false;  // retry on the next status poll
+    }
+  }
+
   async function poll() {
     try {
       const r = await fetch('/api/status', { cache: 'no-store' });
@@ -260,6 +328,7 @@
       if (!submitting) setup.hidden = s.mode !== 'ap';
       updateSystem(s);
       window.dispatchEvent(new CustomEvent('angleros:status', { detail: s }));
+      initCameraSettings(s.camera);
     } catch (e) {
       dot.className = 'dot dot-off';
       text.textContent = 'offline';

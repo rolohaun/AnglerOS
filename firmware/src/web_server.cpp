@@ -69,6 +69,38 @@ static void handleStatus(AsyncWebServerRequest *req) {
   req->send(200, "application/json", out);
 }
 
+// ---- Camera settings ---------------------------------------------------------
+
+static void handleCameraGet(AsyncWebServerRequest *req) {
+  JsonDocument doc;
+  doc["available"] = cameraAvailable();
+  CameraSettings s = cameraGetSettings();
+  doc["framesize"] = s.framesize;
+  doc["quality"] = s.quality;
+  doc["fps"] = s.fps;
+  doc["vflip"] = s.vflip;
+  doc["hmirror"] = s.hmirror;
+  String out;
+  serializeJson(doc, out);
+  req->send(200, "application/json", out);
+}
+
+static void handleCameraSet(AsyncWebServerRequest *req) {
+  CameraSettings s = cameraGetSettings();
+  auto intParam = [&](const char *name, int fallback) {
+    return req->hasParam(name, true) ? req->getParam(name, true)->value().toInt() : fallback;
+  };
+  s.framesize = (uint8_t)intParam("framesize", s.framesize);
+  s.quality = (uint8_t)intParam("quality", s.quality);
+  s.fps = (uint8_t)intParam("fps", s.fps);
+  s.vflip = intParam("vflip", s.vflip) != 0;
+  s.hmirror = intParam("hmirror", s.hmirror) != 0;
+
+  bool ok = cameraApplySettings(s, /*persist=*/true);
+  req->send(ok ? 200 : 503, "application/json",
+            ok ? "{\"ok\":true}" : "{\"ok\":false,\"err\":\"no camera\"}");
+}
+
 // ---- G-code files + print control ------------------------------------------
 
 static void handleGcodeList(AsyncWebServerRequest *req) {
@@ -223,6 +255,9 @@ void webServerBegin(const char *fwVersion) {
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
   server.on("/api/flash", HTTP_GET, handleFlashStatus);
   server.on("/api/flash", HTTP_POST, handleFlashSave);
+
+  server.on("/api/camera", HTTP_GET, handleCameraGet);
+  server.on("/api/camera", HTTP_POST, handleCameraSet);
 
   // G-code file management + print control.
   server.on("/api/gcode/list", HTTP_GET, handleGcodeList);

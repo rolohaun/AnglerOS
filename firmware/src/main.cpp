@@ -116,6 +116,10 @@ void setup() {
                   AP_SSID, WiFi.softAPIP().toString().c_str());
   }
 
+  // Modem sleep adds 100-300ms latency to every web request — the #1 cause of
+  // a sluggish UI. Costs some power; this board is mains-fed.
+  WiFi.setSleep(false);
+
   // Camera last-but-one: its MJPEG server opens sockets, which needs the
   // TCP/IP stack that WiFi.mode() above brought up (starting it earlier
   // crashes lwIP with "Invalid mbox" and boot-loops).
@@ -143,4 +147,9 @@ void loop() {
     delay(500);
     ESP.restart();
   }
+
+  // Brief yield so the busy loop doesn't monopolise the core the network
+  // tasks share; 2ms still services the print job far faster than Marlin
+  // consumes lines.
+  delay(2);
 }
