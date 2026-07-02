@@ -345,12 +345,20 @@ void webServerBegin(const char *fwVersion) {
         if (index + len == total && f) f.close();
       });
 
-  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+  // Assets ship pre-gzipped (CI runs scripts/gzip_fs.py); serveStatic finds the
+  // .gz variants automatically. Short cache so reloads skip re-downloading.
+  server.serveStatic("/", LittleFS, "/")
+      .setDefaultFile("index.html")
+      .setCacheControl("public, max-age=300");
 
   server.onNotFound([](AsyncWebServerRequest *req) {
     // SPA fallback so client-side navigation still resolves.
     if (LittleFS.exists("/index.html")) {
       req->send(LittleFS, "/index.html", "text/html");
+    } else if (LittleFS.exists("/index.html.gz")) {
+      AsyncWebServerResponse *res = req->beginResponse(LittleFS, "/index.html.gz", "text/html");
+      res->addHeader("Content-Encoding", "gzip");
+      req->send(res);
     } else {
       req->send(404, "text/plain", "AnglerOS: UI assets not found on LittleFS");
     }

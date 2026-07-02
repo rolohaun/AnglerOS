@@ -581,7 +581,21 @@
       camAvailable = s.camera;
       camToggle.disabled = !camAvailable;
       camStatus.textContent = camAvailable ? 'Live view + print light (Flash LED panel)' : '';
-      setCamRunning(camAvailable);  // auto-start when a camera exists
+      // Defer auto-start so the stream doesn't compete with the page's own
+      // assets for the ESP32's limited Wi-Fi throughput while loading.
+      if (camAvailable) setTimeout(() => { if (!camRunning) setCamRunning(true); }, 1500);
+    }
+  });
+
+  // Pause the stream while the tab is hidden — it otherwise keeps saturating
+  // the board's Wi-Fi in the background.
+  let camPausedByTab = false;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (camRunning) { camPausedByTab = true; setCamRunning(false); }
+    } else if (camPausedByTab) {
+      camPausedByTab = false;
+      setTimeout(() => setCamRunning(true), 400);
     }
   });
 
