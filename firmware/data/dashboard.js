@@ -5,7 +5,7 @@
   // ---- Draggable dashboard panels ----
   const gridEl = document.getElementById('dashboard-grid');
   const resetLayoutBtn = document.getElementById('layout-reset');
-  const DEFAULT_LAYOUT = ['print', 'temps', 'toolhead', 'machine', 'light', 'terminal', 'macros', 'extruder'];
+  const DEFAULT_LAYOUT = ['print', 'camera', 'files', 'temps', 'toolhead', 'machine', 'light', 'terminal', 'macros', 'extruder'];
   let draggedWidget = null;
   let masonryFrame = 0;
 
@@ -181,7 +181,9 @@
   }
 
   function isTempNoise(line) {
-    return /^ok\s+T:/.test(line) || /^T:.*B:/.test(line);
+    // Temp reports, and the bare per-command "ok" acks that flood the console
+    // while a print job streams.
+    return /^ok\s+T:/.test(line) || /^T:.*B:/.test(line) || /^ok\s*$/.test(line);
   }
 
   // ---- Temperatures ----
@@ -197,7 +199,12 @@
     if (b) { tBed.textContent = Math.round(b[1]); tBedSet.textContent = Math.round(b[2]); }
   }
 
-  setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) send('M105', true); }, 8000);
+  // While a job streams, Marlin auto-reports temps (M155) and polling M105
+  // would inject stray "ok" acks that corrupt the job's flow control.
+  setInterval(() => {
+    if (jobActive) return;
+    if (ws && ws.readyState === WebSocket.OPEN) send('M105', true);
+  }, 8000);
 
   // ---- Console input ----
   document.getElementById('term-form').addEventListener('submit', (e) => {
@@ -381,10 +388,209 @@
     return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   }
 
+  // ---- Print job ----
+  const jobFileEl = document.getElementById('job-file');
+  const jobBarEl = document.getElementById('job-bar');
+  const jobStateEl = document.getElementById('job-state');
+  const jobPctEl = document.getElementById('job-pct');
+  const jobElapsedEl = document.getElementById('job-elapsed');
+  const jobSentEl = document.getElementById('job-sent');
+  const jobPauseBtn = document.getElementById('job-pause');
+  const jobResumeBtn = document.getElementById('job-resume');
+  const jobCancelBtn = document.getElementById('job-cancel');
+  let jobActive = false;
+
+  function fmtBytes(n) {
+    if (!n && n !== 0) return '--';
+    if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+    if (n >= 1024) return (n / 1024).toFixed(0) + ' KB';
+    return n + ' B';
+  }
+
+  function fmtElapsed(sec) {
+    if (!sec && sec !== 0) return '--';
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return (h ? h + 'h ' : '') + m + 'm ' + s + 's';
+  }
+
+  async function printControl(action) {
+    try {
+      const r = await fetch('/api/print/' + action, { method: 'POST' });
+      const data = await r.json();
+      if (!data.ok && data.err) appendLog('! ' + data.err, 'err');
+    } catch (e) {
+      appendLog('! print ' + action + ' failed', 'err');
+    }
+  }
+
+  function updateJob(p) {
+    if (!p) return;
+    jobActive = p.state === 'printing' || p.state === 'paused';
+    jobFileEl.textContent = p.file && p.file.length ? p.file : 'No active job';
+    jobStateEl.textContent = p.state;
+    jobPctEl.textContent = jobActive || p.state === 'done' ? p.progress + '%' : '--';
+    jobBarEl.style.width = (jobActive || p.state === 'done' ? p.progress : 0) + '%';
+    jobElapsedEl.textContent = jobActive || p.state === 'done' ? fmtElapsed(p.elapsed) : '--';
+    jobSentEl.textContent = p.bytes_total
+      ? fmtBytes(p.bytes_sent) + ' / ' + fmtBytes(p.bytes_total) : '--';
+    jobPauseBtn.disabled = p.state !== 'printing';
+    jobResumeBtn.disabled = p.state !== 'paused';
+    jobCancelBtn.disabled = !jobActive;
+  }
+
+  jobPauseBtn.addEventListener('click', () => printControl('pause'));
+  jobResumeBtn.addEventListener('click', () => printControl('resume'));
+  jobCancelBtn.addEventListener('click', () => {
+    if (confirm('Cancel the current print?')) printControl('cancel');
+  });
+
+  // Emergency stop: halt Marlin immediately and stop streaming.
+  const estopBtn = document.querySelector('.estop');
+  if (estopBtn) {
+    estopBtn.addEventListener('click', () => {
+      send('M112');
+      printControl('cancel');
+    });
+  }
+
+  // ---- G-code files ----
+  const gcodeListEl = document.getElementById('gcode-list');
+  const filesStatusEl = document.getElementById('files-status');
+  const uploadInput = document.getElementById('gcode-upload');
+
+  async function loadFiles() {
+    try {
+      const r = await fetch('/api/gcode/list', { cache: 'no-store' });
+      const data = await r.json();
+      renderFiles(data);
+    } catch (e) {
+      filesStatusEl.textContent = 'Could not load file list';
+    }
+  }
+
+  function renderFiles(data) {
+    gcodeListEl.innerHTML = '';
+    const files = (data && data.files) || [];
+    if (!files.length) {
+      gcodeListEl.innerHTML = '<div class="muted gcode-empty">No files yet - upload a .gcode file.</div>';
+    }
+    files.forEach((f) => {
+      const row = document.createElement('div');
+      row.className = 'macro-row';
+      row.innerHTML =
+        `<button class="macro-run gcode-name" title="Print">${escapeHtml(f.name)}` +
+        `<span class="gcode-size">${fmtBytes(f.size)}</span></button>` +
+        '<button class="btn-icon gcode-print" title="Print">&#9654;</button>' +
+        '<button class="btn-icon gcode-del" title="Delete">X</button>';
+      const startPrint = () => {
+        if (jobActive) { appendLog('! a job is already running', 'err'); return; }
+        if (!confirm('Start printing ' + f.name + '?')) return;
+        const body = new URLSearchParams({ name: f.name });
+        fetch('/api/print/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
+        }).then((r) => r.json()).then((d) => {
+          if (!d.ok) appendLog('! ' + (d.err || 'could not start print'), 'err');
+          else appendLog('Printing ' + f.name, 'sent');
+        }).catch(() => appendLog('! could not start print', 'err'));
+      };
+      row.querySelector('.gcode-name').addEventListener('click', startPrint);
+      row.querySelector('.gcode-print').addEventListener('click', startPrint);
+      row.querySelector('.gcode-del').addEventListener('click', () => {
+        if (!confirm('Delete ' + f.name + '?')) return;
+        const body = new URLSearchParams({ name: f.name });
+        fetch('/api/gcode/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body,
+        }).then(() => loadFiles());
+      });
+      gcodeListEl.appendChild(row);
+    });
+    if (data) {
+      filesStatusEl.textContent =
+        (data.storage === 'sd' ? 'SD card' : 'Internal storage') +
+        ' - ' + fmtBytes(data.free) + ' free';
+    }
+    resizeMasonry();
+  }
+
+  if (uploadInput) {
+    uploadInput.addEventListener('change', () => {
+      const file = uploadInput.files[0];
+      if (!file) return;
+      const xhr = new XMLHttpRequest();
+      const form = new FormData();
+      form.append('file', file, file.name);
+      xhr.open('POST', '/api/gcode/upload');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          filesStatusEl.textContent = 'Uploading ' + Math.round((e.loaded / e.total) * 100) + '%';
+        }
+      };
+      xhr.onload = () => {
+        uploadInput.value = '';
+        if (xhr.status === 200) { filesStatusEl.textContent = 'Uploaded ' + file.name; loadFiles(); }
+        else if (xhr.status === 507) filesStatusEl.textContent = 'Not enough storage for ' + file.name;
+        else filesStatusEl.textContent = 'Upload failed (' + xhr.status + ')';
+      };
+      xhr.onerror = () => { filesStatusEl.textContent = 'Upload failed'; uploadInput.value = ''; };
+      xhr.send(form);
+    });
+  }
+
+  // ---- Camera ----
+  const camImg = document.getElementById('cam-stream');
+  const camToggle = document.getElementById('cam-toggle');
+  const camPlaceholder = document.getElementById('cam-placeholder');
+  const camStatus = document.getElementById('cam-status');
+  let camAvailable = false;
+  let camRunning = false;
+
+  function camUrl(path) {
+    return location.protocol + '//' + location.hostname + ':81' + path;
+  }
+
+  function setCamRunning(on) {
+    camRunning = on && camAvailable;
+    if (camRunning) {
+      camImg.src = camUrl('/stream');
+      camImg.style.display = 'block';
+      camPlaceholder.style.display = 'none';
+      camToggle.textContent = 'Stop';
+    } else {
+      camImg.removeAttribute('src');
+      camImg.style.display = 'none';
+      camPlaceholder.style.display = 'flex';
+      camPlaceholder.textContent = camAvailable ? 'Camera off' : 'No camera detected';
+      camToggle.textContent = 'Start';
+    }
+    resizeMasonry();
+  }
+
+  if (camToggle) camToggle.addEventListener('click', () => setCamRunning(!camRunning));
+  if (camImg) camImg.addEventListener('error', () => { if (camRunning) setCamRunning(false); });
+
+  let camInitDone = false;
+  window.addEventListener('angleros:status', (e) => {
+    const s = e.detail || {};
+    updateJob(s.print);
+    if (!camInitDone && typeof s.camera === 'boolean') {
+      camInitDone = true;
+      camAvailable = s.camera;
+      camToggle.disabled = !camAvailable;
+      camStatus.textContent = camAvailable ? 'Live view + print light (Flash LED panel)' : '';
+      setCamRunning(camAvailable);  // auto-start when a camera exists
+    }
+  });
+
   // ---- Init ----
   wireDashboardDrag();
   setLink('disconnected');
   connect();
   loadFlashBrightness();
   loadMacros();
+  loadFiles();
+  setCamRunning(false);
 })();

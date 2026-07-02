@@ -1,10 +1,12 @@
 #include "printer_link.h"
 #include "printer_uart.h"
 #include "printer_usb.h"
+#include "print_job.h"
 
 static void (*s_cb)(const String &) = nullptr;
 
 static void onLineFromTransport(const String &line) {
+  printJobHandlePrinterLine(line);  // consume acks for the streaming job
   if (s_cb) s_cb(line);
 }
 

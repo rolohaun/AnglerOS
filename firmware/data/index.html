@@ -55,20 +55,49 @@
               <span><span class="widget-ico">O</span>Print Status</span>
               <span class="drag-handle" title="Drag panel">::</span>
             </div>
-            <div class="print-preview">
-              <div class="bed-grid"></div>
-              <div class="part-shape"></div>
-            </div>
             <div class="file-row">
-              <span>[ ]</span>
-              <span>[sample]_calibration.gcode</span>
+              <span id="job-file">No active job</span>
             </div>
+            <div class="job-progress"><span id="job-bar" style="width:0%"></span></div>
             <div class="print-stats">
-              <div><b>Speed</b><span>6 mm/s</span></div>
-              <div><b>Flow</b><span>0.3 mm^3/s</span></div>
-              <div><b>Layer</b><span>4 of 185</span></div>
-              <div><b>ETA</b><span>09:52</span></div>
+              <div><b>State</b><span id="job-state">idle</span></div>
+              <div><b>Progress</b><span id="job-pct">--</span></div>
+              <div><b>Elapsed</b><span id="job-elapsed">--</span></div>
+              <div><b>Sent</b><span id="job-sent">--</span></div>
             </div>
+            <div class="job-actions">
+              <button id="job-pause" class="btn-secondary" type="button" disabled>Pause</button>
+              <button id="job-resume" class="btn-secondary" type="button" disabled>Resume</button>
+              <button id="job-cancel" class="btn-secondary" type="button" disabled>Cancel</button>
+            </div>
+          </section>
+
+          <section class="card widget camera-card" data-widget="camera" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">V</span>Camera</span>
+              <span class="card-actions">
+                <button id="cam-toggle" class="btn-secondary btn-sm" type="button">Start</button>
+                <span class="drag-handle" title="Drag panel">::</span>
+              </span>
+            </div>
+            <div class="cam-wrap">
+              <img id="cam-stream" alt="Camera stream" />
+              <div id="cam-placeholder" class="cam-placeholder">Camera off</div>
+            </div>
+            <small id="cam-status" class="muted"></small>
+          </section>
+
+          <section class="card widget files-card" data-widget="files" draggable="true">
+            <div class="card-title">
+              <span><span class="widget-ico">F</span>G-code Files</span>
+              <span class="card-actions">
+                <label class="btn-secondary btn-sm upload-btn" for="gcode-upload">Upload</label>
+                <input id="gcode-upload" type="file" accept=".gcode,.gco,.g,.nc" hidden />
+                <span class="drag-handle" title="Drag panel">::</span>
+              </span>
+            </div>
+            <div id="gcode-list" class="gcode-list"></div>
+            <small id="files-status" class="muted"></small>
           </section>
 
           <section class="card widget temps-card" data-widget="temps" draggable="true">

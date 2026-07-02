@@ -259,6 +259,7 @@
       if (s.fw) fwEl.textContent = 'v' + s.fw;
       if (!submitting) setup.hidden = s.mode !== 'ap';
       updateSystem(s);
+      window.dispatchEvent(new CustomEvent('angleros:status', { detail: s }));
     } catch (e) {
       dot.className = 'dot dot-off';
       text.textContent = 'offline';

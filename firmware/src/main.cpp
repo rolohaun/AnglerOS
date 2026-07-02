@@ -17,6 +17,9 @@
 #include "system_metrics.h"
 #include "storage_metrics.h"
 #include "flash_led.h"
+#include "camera.h"
+#include "gcode_store.h"
+#include "print_job.h"
 
 #if CONFIG_IDF_TARGET_ESP32S3
 static const ImprovTypes::ChipFamily IMPROV_CHIP = ImprovTypes::ChipFamily::CF_ESP32_S3;
@@ -85,6 +88,13 @@ void setup() {
   } else {
     Serial.printf("[sd] %s\n", storageSdStatus());
   }
+  gcodeStoreBegin();
+
+  if (cameraBegin()) {
+    Serial.println("[cam] camera ready");
+  } else {
+    Serial.println("[cam] no camera");
+  }
 
   improvSerial.setDeviceInfo(IMPROV_CHIP, "AnglerOS",
                              FW_VERSION, "AnglerOS", "http://{LOCAL_IPV4}");
@@ -123,6 +133,7 @@ void loop() {
   systemMetricsTick();
   improvSerial.handleSerial();
   printerLinkPump();
+  printJobPump();
 
   if (webServerPendingRestart()) {
     Serial.println("[wifi] credentials saved, rebooting...");

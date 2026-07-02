@@ -999,3 +999,34 @@ select { cursor: pointer; }
   .term-input .btn-primary { grid-column: 1 / -1; width: 100%; }
   .print-stats { grid-template-columns: repeat(2, 1fr); row-gap: .8rem; }
 }
+
+/* Camera panel */
+.cam-wrap {
+  position: relative; border-radius: 8px; overflow: hidden;
+  background: #15181d; border: 1px solid var(--border);
+  min-height: 140px; display: flex; align-items: center; justify-content: center;
+}
+.cam-wrap img { width: 100%; display: none; }
+.cam-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); min-height: 140px; font-size: .85rem;
+}
+
+/* Print job */
+.job-progress {
+  height: 8px; border-radius: 6px; background: var(--bg-elev);
+  border: 1px solid var(--border); overflow: hidden; margin: .6rem 0;
+}
+.job-progress span {
+  display: block; height: 100%; width: 0;
+  background: var(--accent); transition: width .5s ease;
+}
+.job-actions { display: flex; gap: .5rem; margin-top: .6rem; }
+.job-actions button { flex: 1; }
+
+/* G-code files */
+.gcode-list { display: flex; flex-direction: column; gap: .4rem; margin-top: .3rem; }
+.gcode-name { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
+.gcode-size { color: var(--muted); font-size: .75rem; }
+.gcode-empty { padding: .6rem 0; }
+.upload-btn { cursor: pointer; display: inline-block; }
