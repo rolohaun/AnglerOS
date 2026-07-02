@@ -4,9 +4,10 @@
 flashing [Marlin](https://marlinfw.org/) firmware.**
 
 AnglerOS aims to make setting up Marlin on RP2040-class mainboards as painless as
-Klipper's single config file. It runs on an inexpensive **ESP32-CAM**, serves a
-dark-themed web UI (green accents, inspired by Mainsail), and acts as the bridge
-between the user and Marlin's sprawling `Configuration.h` / `Configuration_adv.h`.
+Klipper's single config file. It runs on an inexpensive **ESP32-S3-CAM**, serves
+a dark-themed web UI (green accents, inspired by Mainsail), and acts as the
+bridge between the user and Marlin's sprawling `Configuration.h` /
+`Configuration_adv.h`.
 
 > Status: **early development.** First target board: **BigTreeTech SKR Pico**
 > (RP2040) on a custom Delta printer.
@@ -36,14 +37,14 @@ writes the firmware over the CH340 USB-serial adapter straight from Chrome/Edge.
 
 | Part | Notes |
 |------|-------|
-| ESP32-CAM (AI-Thinker/Aideepen) | OV3660 camera, CH340 programmer adapter |
+| ESP32-S3-CAM | OV3660 camera, CH340 programmer port, native USB-OTG printer link |
 | BigTreeTech SKR Pico | RP2040 mainboard running Marlin |
-| UART link | ESP32 ↔ SKR Pico host serial (3.3V, see [docs/hardware.md](docs/hardware.md)) |
+| USB-OTG link | ESP32-S3-CAM to printer USB port, see [docs/hardware.md](docs/hardware.md) |
 
 ## Repository layout
 
 ```
-firmware/          PlatformIO project for the ESP32-CAM
+firmware/          PlatformIO project for the ESP32-S3-CAM
   data/            LittleFS web UI (SPA) + config schema + board profiles
 .github/workflows/ CI: build AnglerOS firmware + build Marlin from config
 pages/             GitHub Pages browser flasher (ESP Web Tools)
@@ -56,7 +57,7 @@ full design and roadmap.
 
 ## Roadmap
 
-- ESP32-S3 target (USB-OTG) → potential direct-over-USB mainboard flashing.
+- USB-OTG printer control from the ESP32-S3-CAM dashboard.
 - SWD auto-flash from the ESP32.
 - Additional mainboards via JSON board profiles.
 

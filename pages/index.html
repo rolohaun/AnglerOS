@@ -29,10 +29,16 @@
     h1 { margin: 0 0 .25rem; font-size: 1.6rem; }
     h1 span { color: var(--accent); }
     p { color: var(--muted); }
-    label { display: block; margin: 1.25rem 0 .4rem; font-weight: 600; }
-    select {
-      width: 100%; padding: .6rem .7rem; background: var(--bg);
-      color: var(--text); border: 1px solid var(--border); border-radius: 8px;
+    .board-pill {
+      display: inline-flex; align-items: center; gap: .45rem;
+      margin: .75rem 0 .25rem; padding: .45rem .65rem;
+      background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 999px;
+      font-weight: 600; font-size: .88rem;
+    }
+    .board-pill::before {
+      content: ""; width: .55rem; height: .55rem; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 0 3px rgba(63, 208, 106, .12);
     }
     .install { margin-top: 1.5rem; }
     esp-web-install-button {
@@ -60,27 +66,21 @@
 <body>
   <div class="card">
     <h1>Install <span>AnglerOS</span></h1>
-    <p>Flash AnglerOS onto your ESP32 straight from the browser — no PlatformIO,
-       no command line.</p>
-
-    <label for="board">Your board</label>
-    <select id="board">
-      <option value="esp32cam" selected>ESP32-CAM (AI-Thinker / Aideepen)</option>
-      <option value="esp32s3cam">ESP32-S3-CAM (dual USB-C, USB-OTG printer link)</option>
-    </select>
+    <p>Flash AnglerOS onto your ESP32-S3-CAM straight from the browser &mdash; no
+       PlatformIO, no command line.</p>
+    <div class="board-pill">ESP32-S3-CAM &middot; USB-OTG printer link</div>
 
     <div class="install">
       <esp-web-install-button id="installer"
-        manifest="manifest-esp32cam.json"></esp-web-install-button>
+        manifest="manifest-esp32s3cam.json"></esp-web-install-button>
     </div>
 
     <p class="note">
-      Requires <strong>Chrome</strong> or <strong>Edge</strong>. Plug the ESP32
-      into your PC <strong>over USB</strong>, click <em>Connect</em>, then
-      <em>Install</em>. If flashing doesn't start, hold the <code>IO0</code>
-      (BOOT) button while connecting to enter the bootloader.
-      <br/><strong>ESP32-S3-CAM:</strong> it has two USB-C ports — flash via the
-      <strong>UART/CH340 port</strong>; the other (OTG) port is for the printer.
+      Requires <strong>Chrome</strong> or <strong>Edge</strong>. Plug the
+      <strong>UART/CH340 USB-C port</strong> into your PC, click
+      <em>Connect</em>, then <em>Install</em>. If flashing doesn't start, hold
+      the <code>BOOT</code> button while connecting to enter the bootloader.
+      The second USB-C port is the native <strong>USB-OTG</strong> printer link.
     </p>
 
     <details class="after" open>
@@ -100,14 +100,5 @@
       <p class="muted">See the <a href="../docs/">setup docs</a> for details.</p>
     </details>
   </div>
-
-  <script>
-    // Swap the manifest when more boards are added to the picker.
-    const board = document.getElementById('board');
-    const installer = document.getElementById('installer');
-    board.addEventListener('change', () => {
-      installer.manifest = `manifest-${board.value}.json`;
-    });
-  </script>
 </body>
 </html>

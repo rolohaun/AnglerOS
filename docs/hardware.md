@@ -86,13 +86,12 @@ disabled on this board — USB-OTG is the link.
 
 ## Flashing AnglerOS onto the ESP32
 
-Use the [browser flasher](../pages/) (Chrome/Edge). The Aideepen CAM-MB adapter
-supports auto-download (DTR/RTS auto-reset). If your adapter lacks auto-reset,
-hold **IO0 to GND** while connecting to enter the ROM bootloader.
+Use the [browser flasher](../pages/) (Chrome/Edge). The public flasher targets
+the **ESP32-S3-CAM** only.
 
-**ESP32-S3-CAM:** connect the **UART/CH340 USB-C port** to your PC (not the OTG
-port) and pick "ESP32-S3-CAM" in the board list. If flashing doesn't start,
-hold the **BOOT** button while plugging in.
+Connect the **UART/CH340 USB-C port** to your PC, not the OTG port. If flashing
+doesn't start, hold the **BOOT** button while plugging in. After setup, use the
+second USB-C port as the USB-OTG printer link.
 
 ## Flashing Marlin onto the SKR Pico
 
