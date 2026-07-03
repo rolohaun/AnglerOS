@@ -36,24 +36,47 @@ New-Item -ItemType Directory -Force -Path $work | Out-Null
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
   throw "Git is not installed. Get it from https://git-scm.com/download/win, then re-run."
 }
-$py = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $py) { $py = (Get-Command py -ErrorAction SilentlyContinue).Source }
-if (-not $py) {
+
+function Find-Python {
+  $candidates = @()
+  $penv = Join-Path $env:USERPROFILE '.platformio\penv\Scripts\python.exe'
+  if (Test-Path $penv) { $candidates += @{ Exe = $penv; Args = @() } }
+  $pyLauncher = (Get-Command py -ErrorAction SilentlyContinue).Source
+  if ($pyLauncher) { $candidates += @{ Exe = $pyLauncher; Args = @('-3') } }
+  $python = (Get-Command python -ErrorAction SilentlyContinue).Source
+  if ($python) { $candidates += @{ Exe = $python; Args = @() } }
+  $python3 = (Get-Command python3 -ErrorAction SilentlyContinue).Source
+  if ($python3) { $candidates += @{ Exe = $python3; Args = @() } }
+
+  foreach ($candidate in $candidates) {
+    $out = & $candidate.Exe @($candidate.Args) -c "import sys; print(sys.executable)" 2>$null
+    if ($LASTEXITCODE -eq 0 -and $out) { return $candidate }
+  }
+  return $null
+}
+
+$pythonCmd = Find-Python
+if (-not $pythonCmd) {
   throw "Python is not installed. Get it from https://www.python.org/downloads/ (tick 'Add Python to PATH'), then re-run."
+}
+
+function Invoke-Python {
+  param([string[]]$PythonArgs)
+  & $pythonCmd.Exe @($pythonCmd.Args) @PythonArgs
 }
 
 # PlatformIO: invoke it as a Python module on Windows. Some App Control
 # policies block the platformio.exe shim even when the Python module is allowed.
-& $py -m platformio --version *> $null
+Invoke-Python @('-m', 'platformio', '--version') *> $null
 if ($LASTEXITCODE -ne 0) {
   Write-Host "Installing PlatformIO (one-time, may take a minute)..." -ForegroundColor Yellow
-  & $py -m pip install --user --upgrade platformio
+  Invoke-Python @('-m', 'pip', 'install', '--user', '--upgrade', 'platformio')
   if ($LASTEXITCODE -ne 0) { throw "PlatformIO install failed." }
 }
 
 function Invoke-Pio {
   param([string[]]$PioArgs)
-  & $py -m platformio @PioArgs
+  Invoke-Python @('-m', 'platformio') @PioArgs
 }
 
 # --- Clone Marlin at the required ref (re-clone if it changed) --------------

@@ -57,20 +57,42 @@ if (-not (Test-Path $WorkDir)) {
 Copy-Item $Config (Join-Path $WorkDir "Marlin\config.ini") -Force
 Write-Host "Copied config.ini -> $WorkDir\Marlin\config.ini" -ForegroundColor Green
 
-$py = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $py) { $py = (Get-Command py -ErrorAction SilentlyContinue).Source }
-if (-not $py) { throw "Python is not installed or not on PATH." }
+function Find-Python {
+  $candidates = @()
+  $penv = Join-Path $env:USERPROFILE ".platformio\penv\Scripts\python.exe"
+  if (Test-Path $penv) { $candidates += @{ Exe = $penv; Args = @() } }
+  $pyLauncher = (Get-Command py -ErrorAction SilentlyContinue).Source
+  if ($pyLauncher) { $candidates += @{ Exe = $pyLauncher; Args = @("-3") } }
+  $python = (Get-Command python -ErrorAction SilentlyContinue).Source
+  if ($python) { $candidates += @{ Exe = $python; Args = @() } }
+  $python3 = (Get-Command python3 -ErrorAction SilentlyContinue).Source
+  if ($python3) { $candidates += @{ Exe = $python3; Args = @() } }
 
-& $py -m platformio --version *> $null
+  foreach ($candidate in $candidates) {
+    $out = & $candidate.Exe @($candidate.Args) -c "import sys; print(sys.executable)" 2>$null
+    if ($LASTEXITCODE -eq 0 -and $out) { return $candidate }
+  }
+  return $null
+}
+
+$pythonCmd = Find-Python
+if (-not $pythonCmd) { throw "Python is not installed or not on PATH." }
+
+function Invoke-Python {
+  param([string[]]$PythonArgs)
+  & $pythonCmd.Exe @($pythonCmd.Args) @PythonArgs
+}
+
+Invoke-Python @("-m", "platformio", "--version") *> $null
 if ($LASTEXITCODE -ne 0) {
   Write-Host "Installing PlatformIO (one-time, may take a minute)..." -ForegroundColor Yellow
-  & $py -m pip install --user --upgrade platformio
+  Invoke-Python @("-m", "pip", "install", "--user", "--upgrade", "platformio")
   if ($LASTEXITCODE -ne 0) { throw "PlatformIO install failed." }
 }
 
 Write-Host "Building env:$Env with python -m platformio ..." -ForegroundColor Cyan
 Push-Location $WorkDir
-try { & $py -m platformio run -e $Env } finally { Pop-Location }
+try { Invoke-Python @("-m", "platformio", "run", "-e", $Env) } finally { Pop-Location }
 
 $uf2 = Join-Path $WorkDir ".pio\build\$Env\firmware.uf2"
 if (Test-Path $uf2) {

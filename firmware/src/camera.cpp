@@ -57,7 +57,7 @@ static httpd_handle_t s_httpd = nullptr;
 // within the ESP32's comfortable Wi-Fi TX budget. Frame buffers are allocated
 // at SVGA so the user can go up to SVGA at runtime without re-init.
 static CameraSettings s_settings = {8 /*VGA*/, 12, 10, true, false};
-static bool s_enabled = true;  // user preference, persisted
+static bool s_enabled = false;  // user preference, persisted
 static const char *SETTINGS_PATH = "/camera.json";
 
 static void loadSettings() {
@@ -169,6 +169,7 @@ static void startStreamServer() {
   config.ctrl_port = 32769;      // keep clear of other httpd instances
   config.max_open_sockets = 3;   // stream viewers are few
   config.lru_purge_enable = true;
+  config.core_id = 0;            // keep stream/network work off the print loop
   // Run below the async web server's task so streaming can't make the UI lag.
   config.task_priority = 2;
 
