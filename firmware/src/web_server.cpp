@@ -144,8 +144,27 @@ static void handleGcodeList(AsyncWebServerRequest *req) {
 static File s_upload;
 static bool s_uploadRejected = false;
 static String s_uploadPath;
-static uint8_t s_uploadBuf[16 * 1024];
+static uint8_t s_uploadFallbackBuf[16 * 1024];
+static uint8_t *s_uploadBuf = s_uploadFallbackBuf;
+static size_t s_uploadBufCap = sizeof(s_uploadFallbackBuf);
 static size_t s_uploadBufLen = 0;
+
+static void uploadEnsureBuffer() {
+  if (s_uploadBuf != s_uploadFallbackBuf) return;
+
+  // The ESP32-S3-CAM has 8MB PSRAM. Use it as a rolling upload window so
+  // browser uploads are not throttled by tiny SD/LittleFS write buffers. Files
+  // can still be much larger than this; the window flushes repeatedly.
+  if (!ESP.getPsramSize()) return;
+
+  const size_t target = 512 * 1024;
+  uint8_t *buf = (uint8_t *)ps_malloc(target);
+  if (buf) {
+    s_uploadBuf = buf;
+    s_uploadBufCap = target;
+    Serial.printf("[upload] using %uKB PSRAM buffer\n", (unsigned)(s_uploadBufCap / 1024));
+  }
+}
 
 static bool uploadFlush() {
   if (!s_upload || !s_uploadBufLen) return true;
@@ -174,6 +193,7 @@ static void uploadBegin(const String &filename, size_t totalBytes) {
   s_uploadRejected = false;
   s_uploadPath = gcodeSanitizeName(filename);
   s_uploadBufLen = 0;
+  uploadEnsureBuffer();
 
   // Reject uploads that clearly can't fit (leave ~64KB headroom).
   if (totalBytes + 65536 > gcodeFreeBytes()) {
@@ -182,7 +202,13 @@ static void uploadBegin(const String &filename, size_t totalBytes) {
   }
 
   s_upload = gcodeCreate(s_uploadPath);
-  if (!s_upload) s_uploadRejected = true;
+  if (!s_upload) {
+    s_uploadRejected = true;
+  } else {
+    // The default VFS stdio buffer is only 4KB. Bigger buffering keeps SD writes
+    // closer to block-sized bursts and cuts a surprising amount of overhead.
+    s_upload.setBufferSize(64 * 1024);
+  }
 }
 
 static void uploadEnd() {

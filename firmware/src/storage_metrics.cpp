@@ -2,6 +2,7 @@
 
 #include <LittleFS.h>
 #include <SD_MMC.h>
+#include "driver/sdmmc_types.h"
 
 static bool s_sdMounted = false;
 static const char *s_sdStatus = "Not initialized";
@@ -24,7 +25,8 @@ void storageBegin() {
 #endif
   // ESP32-CAM SD_MMC one-bit mode uses GPIO14/15/2. GPIO14 is also the default
   // printer UART TX, so main.cpp skips that UART when a card is mounted.
-  if (!SD_MMC.begin("/sdcard", /*mode1bit=*/true)) {
+  if (!SD_MMC.begin("/sdcard", /*mode1bit=*/true, /*format_if_mount_failed=*/false,
+                    SDMMC_FREQ_HIGHSPEED)) {
     s_sdMounted = false;
     s_sdStatus = "No SD card mounted";
     s_sdType = "None";
