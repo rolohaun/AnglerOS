@@ -80,7 +80,10 @@ if (-not $pythonCmd) { throw "Python is not installed or not on PATH." }
 
 function Invoke-Python {
   param([string[]]$PythonArgs)
-  & $pythonCmd.Exe @($pythonCmd.Args) @PythonArgs
+  $argv = @()
+  if ($pythonCmd.Args) { $argv += $pythonCmd.Args }
+  $argv += $PythonArgs
+  & $pythonCmd.Exe @argv
 }
 
 Invoke-Python @("-m", "platformio", "--version") *> $null

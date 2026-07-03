@@ -62,7 +62,10 @@ if (-not $pythonCmd) {
 
 function Invoke-Python {
   param([string[]]$PythonArgs)
-  & $pythonCmd.Exe @($pythonCmd.Args) @PythonArgs
+  $argv = @()
+  if ($pythonCmd.Args) { $argv += $pythonCmd.Args }
+  $argv += $PythonArgs
+  & $pythonCmd.Exe @argv
 }
 
 # PlatformIO: invoke it as a Python module on Windows. Some App Control
@@ -76,7 +79,7 @@ if ($LASTEXITCODE -ne 0) {
 
 function Invoke-Pio {
   param([string[]]$PioArgs)
-  Invoke-Python @('-m', 'platformio') @PioArgs
+  Invoke-Python (@('-m', 'platformio') + $PioArgs)
 }
 
 # --- Clone Marlin at the required ref (re-clone if it changed) --------------
