@@ -101,6 +101,9 @@ static void handleGcodeList(AsyncWebServerRequest *req) {
 static File s_upload;
 static bool s_uploadRejected = false;
 static String s_uploadPath;
+static String s_uploadedName;
+static bool s_uploadCompleted = false;
+static bool s_uploadFileCreated = false;
 static uint8_t s_uploadBuf[32 * 1024];
 static const size_t s_uploadBufCap = sizeof(s_uploadBuf);
 static size_t s_uploadBufLen = 0;
@@ -131,6 +134,9 @@ static void uploadWrite(const uint8_t *data, size_t len) {
 static void uploadBegin(const String &filename, size_t totalBytes) {
   s_uploadRejected = false;
   s_uploadPath = gcodeSanitizeName(filename);
+  s_uploadedName = "";
+  s_uploadCompleted = false;
+  s_uploadFileCreated = false;
   s_uploadBufLen = 0;
 
   // Reject uploads that clearly can't fit (leave ~64KB headroom).
@@ -143,6 +149,7 @@ static void uploadBegin(const String &filename, size_t totalBytes) {
   if (!s_upload) {
     s_uploadRejected = true;
   } else {
+    s_uploadFileCreated = true;
     // The default VFS stdio buffer is only 4KB. Bigger buffering keeps SD writes
     // closer to block-sized bursts and cuts a surprising amount of overhead.
     s_upload.setBufferSize(64 * 1024);
@@ -154,7 +161,13 @@ static void uploadEnd() {
     if (!uploadFlush()) s_uploadRejected = true;
     s_upload.close();
   }
-  if (s_uploadRejected && s_uploadPath.length()) gcodeDelete(s_uploadPath);
+  if (s_uploadRejected && s_uploadFileCreated && s_uploadPath.length()) {
+    gcodeDelete(s_uploadPath);
+  } else if (!s_uploadRejected && s_uploadFileCreated && s_uploadPath.length()) {
+    s_uploadedName = s_uploadPath;
+    s_uploadCompleted = true;
+  }
+  s_uploadFileCreated = false;
   s_uploadPath = "";
   storageMarkDirty();  // refresh cached free-space numbers from loop()
 }
@@ -181,9 +194,80 @@ static void handleGcodeUploadBody(AsyncWebServerRequest *req, uint8_t *data,
 static void handleGcodeUploadDone(AsyncWebServerRequest *req) {
   if (s_uploadRejected) {
     req->send(507, "application/json", "{\"ok\":false,\"err\":\"not enough storage\"}");
+  } else if (!s_uploadCompleted) {
+    req->send(400, "application/json", "{\"ok\":false,\"err\":\"file required\"}");
   } else {
     req->send(200, "application/json", "{\"ok\":true}");
   }
+}
+
+// ---- OctoPrint compatibility (OrcaSlicer) ---------------------------------
+
+// OrcaSlicer's Octo/Klipper host first probes this endpoint and requires an
+// `api` field plus a `text` value beginning with "OctoPrint". AnglerOS only
+// implements the small OctoPrint API subset needed for direct uploads.
+static void handleOctoVersion(AsyncWebServerRequest *req) {
+  JsonDocument doc;
+  doc["api"] = "0.1";
+  doc["server"] = "1.11.0";
+  doc["text"] = "OctoPrint 1.11.0 (AnglerOS compatibility)";
+  doc["angleros"] = s_fwVersion;
+
+  String out;
+  serializeJson(doc, out);
+  req->send(200, "application/json", out);
+}
+
+static bool postParamIsTrue(AsyncWebServerRequest *req, const char *name) {
+  if (!req->hasParam(name, true)) return false;
+  String value = req->getParam(name, true)->value();
+  value.trim();
+  return value == "1" || value.equalsIgnoreCase("true") || value.equalsIgnoreCase("yes");
+}
+
+static void handleOctoUploadDone(AsyncWebServerRequest *req) {
+  if (s_uploadRejected) {
+    req->send(507, "application/json",
+              "{\"error\":\"Upload failed: not enough storage\"}");
+    return;
+  }
+  if (!s_uploadCompleted) {
+    req->send(400, "application/json", "{\"error\":\"A file part is required\"}");
+    return;
+  }
+
+  bool startRequested = postParamIsTrue(req, "print");
+  if (startRequested) {
+    if (!printerLinkAvailable() || String(printerLinkActive()) == "none") {
+      req->send(409, "application/json",
+                "{\"error\":\"File uploaded, but the printer is not connected\"}");
+      return;
+    }
+    if (!printJobStart(s_uploadedName)) {
+      req->send(409, "application/json",
+                "{\"error\":\"File uploaded, but the printer is busy\"}");
+      return;
+    }
+  }
+
+  // Match the useful portion of OctoPrint's upload response. OrcaSlicer only
+  // requires a successful HTTP status, while the metadata keeps the endpoint
+  // friendly to other OctoPrint upload clients.
+  JsonDocument doc;
+  doc["done"] = true;
+  JsonObject files = doc["files"].to<JsonObject>();
+  JsonObject local = files["local"].to<JsonObject>();
+  local["name"] = s_uploadedName;
+  local["display"] = s_uploadedName;
+  local["path"] = s_uploadedName;
+  local["origin"] = "local";
+  local["type"] = "machinecode";
+  JsonArray typePath = local["typePath"].to<JsonArray>();
+  typePath.add("machinecode");
+
+  String out;
+  serializeJson(doc, out);
+  req->send(201, "application/json", out);
 }
 
 static void handlePrintControl(AsyncWebServerRequest *req) {
@@ -290,6 +374,12 @@ void webServerBegin(const char *fwVersion) {
   server.on("/api/gcode/list", HTTP_GET, handleGcodeList);
   server.on("/api/gcode/upload", HTTP_POST, handleGcodeUploadDone,
             handleGcodeUploadChunk, handleGcodeUploadBody);
+
+  // OrcaSlicer: choose the Octo/Klipper host type. It probes /api/version and
+  // sends a multipart upload to /api/files/local (optionally with print=true).
+  server.on("/api/version", HTTP_GET, handleOctoVersion);
+  server.on("/api/files/local", HTTP_POST, handleOctoUploadDone,
+            handleGcodeUploadChunk);
   server.on("/api/gcode/delete", HTTP_POST, [](AsyncWebServerRequest *req) {
     if (!req->hasParam("name", true)) {
       req->send(400, "application/json", "{\"ok\":false,\"err\":\"name required\"}");

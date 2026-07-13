@@ -16,6 +16,7 @@ configuration surface into a focused browser workflow.
 - Mainsail-inspired dashboard with movable cards, temperatures, jog controls,
   macros, console, and print controls.
 - Fast direct-to-card G-code uploads through the T-Dongle's 4-bit SDMMC slot.
+- Direct upload and print from OrcaSlicer through its Octo/Klipper host type.
 - USB-OTG CDC host and QWIIC UART printer links.
 - Onboard APA102 printer-light brightness control.
 - Onboard 160x80 status screen with IP address, temperatures, active command,
@@ -33,6 +34,9 @@ configuration surface into a focused browser workflow.
 
 See [hardware and wiring](docs/hardware.md) for the exact SDMMC, UART, USB, and
 LED details.
+
+See [OrcaSlicer setup](docs/orcaslicer.md) to send sliced G-code straight to
+AnglerOS over the local network.
 
 ## Repository layout
 
