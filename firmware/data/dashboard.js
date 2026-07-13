@@ -476,9 +476,10 @@
     }
     files.forEach((f) => {
       const row = document.createElement('div');
-      row.className = 'macro-row';
+      row.className = 'gcode-row';
       row.innerHTML =
-        `<button class="macro-run gcode-name" title="Print">${escapeHtml(f.name)}` +
+        `<button class="macro-run gcode-file" title="Print ${escapeHtml(f.name)}">` +
+        `<span class="gcode-name">${escapeHtml(f.name)}</span>` +
         `<span class="gcode-size">${fmtBytes(f.size)}</span></button>` +
         '<button class="btn-icon gcode-print" title="Print">&#9654;</button>' +
         '<button class="btn-icon gcode-del" title="Delete">X</button>';
@@ -495,7 +496,7 @@
           else appendLog('Printing ' + f.name, 'sent');
         }).catch(() => appendLog('! could not start print', 'err'));
       };
-      row.querySelector('.gcode-name').addEventListener('click', startPrint);
+      row.querySelector('.gcode-file').addEventListener('click', startPrint);
       row.querySelector('.gcode-print').addEventListener('click', startPrint);
       row.querySelector('.gcode-del').addEventListener('click', () => {
         if (!confirm('Delete ' + f.name + '?')) return;
