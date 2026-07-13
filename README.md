@@ -1,65 +1,50 @@
 # AnglerOS
 
-**A Mainsail-style web interface, self-hosted on an ESP32, for configuring and
-flashing [Marlin](https://marlinfw.org/) firmware.**
+**A Mainsail-style web interface, self-hosted on a LILYGO T-Dongle-S3, for
+controlling a printer and configuring and building Marlin firmware.**
 
-AnglerOS aims to make setting up Marlin on RP2040-class mainboards as painless as
-Klipper's single config file. It runs on an inexpensive **ESP32-S3-CAM**, serves
-a dark-themed web UI (green accents, inspired by Mainsail), and acts as the
-bridge between the user and Marlin's sprawling `Configuration.h` /
-`Configuration_adv.h`.
+AnglerOS serves a movable three-column dashboard, stores and streams G-code,
+bridges commands to Marlin over USB-OTG or UART, and turns Marlin's large
+configuration surface into a focused browser workflow.
 
-> Status: **early development.** First target board: **BigTreeTech SKR Pico**
-> (RP2040) on a custom Delta printer.
+> Status: **early development.** The AnglerOS controller target is the
+> **LILYGO T-Dongle-S3**. The first printer-board profile is BigTreeTech SKR
+> Pico (RP2040).
 
-## What it does
+## Current features
 
-- **Dashboard** — live temperatures, jog controls, G-code select & print, and a
-  print-monitoring camera feed (OV3660 + onboard flash LED).
-- **Configuration** — a Klipper-like "one page" config that exposes only the
-  settings a printer actually needs (steppers, TMC2209-over-UART, hotend, bed,
-  kinematics geometry), then drives an automated build + flash pipeline.
-
-## How it works
-
-The ESP32 can't compile Marlin itself, so AnglerOS offloads the heavy lifting:
-
-1. You fill in the Configuration tab. AnglerOS generates a Marlin `config.ini`.
-2. It triggers a **GitHub Actions** build that compiles Marlin at the latest
-   stable release and produces a `firmware.uf2`.
-3. You flash the `.uf2` to the SKR Pico via BOOTSEL (drag-and-drop).
-
-Installing **AnglerOS itself** onto the ESP32 needs no toolchain: a
-[browser flasher](pages/) (ESP Web Tools / Web Serial) hosted on GitHub Pages
-writes the firmware over the CH340 USB-serial adapter straight from Chrome/Edge.
+- Mainsail-inspired dashboard with movable cards, temperatures, jog controls,
+  macros, console, and print controls.
+- Fast direct-to-card G-code uploads through the T-Dongle's 4-bit SDMMC slot.
+- USB-OTG CDC host and QWIIC UART printer links.
+- Onboard APA102 printer-light brightness control.
+- System view with ESP32-S3 CPU, memory, network, and storage metrics.
+- Browser-based AnglerOS installer and GitHub Actions Marlin builds.
 
 ## Hardware
 
 | Part | Notes |
 |------|-------|
-| ESP32-S3-CAM | OV3660 camera, CH340 programmer port, native USB-OTG printer link |
-| BigTreeTech SKR Pico | RP2040 mainboard running Marlin |
-| USB-OTG link | ESP32-S3-CAM to printer USB port, see [docs/hardware.md](docs/hardware.md) |
+| LILYGO T-Dongle-S3 | ESP32-S3, 16MB flash, no PSRAM, TF slot, USB-OTG, APA102 |
+| Printer mainboard | Marlin controller; SKR Pico is the first included profile |
+| Printer link | USB-OTG CDC or 3.3V QWIIC UART |
+
+See [hardware and wiring](docs/hardware.md) for the exact SDMMC, UART, USB, and
+LED details.
 
 ## Repository layout
 
-```
-firmware/          PlatformIO project for the ESP32-S3-CAM
-  data/            LittleFS web UI (SPA) + config schema + board profiles
-.github/workflows/ CI: build AnglerOS firmware + build Marlin from config
-pages/             GitHub Pages browser flasher (ESP Web Tools)
-scripts/           build helpers (config prep, bin merge)
-docs/              wiring, flashing, setup guides
+```text
+firmware/          PlatformIO project for the LILYGO T-Dongle-S3
+  data/            LittleFS web UI and printer-board profiles
+.github/workflows/ AnglerOS firmware and Marlin build automation
+pages/             GitHub Pages browser flasher
+scripts/           Build helpers and flash-image merging
+docs/              Wiring, flashing, and setup guides
 ```
 
 See the [project plan](.claude/plans/i-have-this-esp32-gentle-shore.md) for the
 full design and roadmap.
-
-## Roadmap
-
-- USB-OTG printer control from the ESP32-S3-CAM dashboard.
-- SWD auto-flash from the ESP32.
-- Additional mainboards via JSON board profiles.
 
 ## License
 

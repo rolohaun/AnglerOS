@@ -5,7 +5,7 @@
   // ---- Draggable dashboard panels ----
   const gridEl = document.getElementById('dashboard-grid');
   const resetLayoutBtn = document.getElementById('layout-reset');
-  const DEFAULT_LAYOUT = ['print', 'camera', 'files', 'temps', 'toolhead', 'machine', 'light', 'terminal', 'macros', 'extruder'];
+  const DEFAULT_LAYOUT = ['print', 'files', 'temps', 'toolhead', 'machine', 'light', 'terminal', 'macros', 'extruder'];
   let draggedWidget = null;
   let masonryFrame = 0;
 
@@ -230,7 +230,7 @@
   }));
   document.getElementById('motors-off').addEventListener('click', () => send('M84'));
 
-  // ---- Flash LED ----
+  // ---- Onboard printer light ----
   const flashSlider = document.getElementById('flash-brightness');
   const flashLabel = document.getElementById('flash-brightness-label');
   const flashToggle = document.getElementById('flash-toggle');
@@ -248,7 +248,7 @@
     if (flashSlider) flashSlider.value = brightness;
     if (flashLabel) flashLabel.textContent = brightness + ' %';
     if (flashToggle) flashToggle.textContent = brightness > 0 ? 'On' : 'Turn on';
-    if (flashStatus) flashStatus.textContent = status || (brightness > 0 ? 'Flash LED on' : 'Flash LED off');
+    if (flashStatus) flashStatus.textContent = status || (brightness > 0 ? 'Printer light on' : 'Printer light off');
     if (brightness > 0) lastFlashBrightness = brightness;
     resizeMasonry();
   }
@@ -282,7 +282,7 @@
       const data = await r.json();
       applyFlashUi(data.brightness || 0);
     } catch (e) {
-      applyFlashUi(0, 'Flash LED unavailable');
+      applyFlashUi(0, 'Printer light unavailable');
     }
   }
 
@@ -549,76 +549,9 @@
     });
   }
 
-  // ---- Camera ----
-  const camImg = document.getElementById('cam-stream');
-  const camToggle = document.getElementById('cam-toggle');
-  const camPlaceholder = document.getElementById('cam-placeholder');
-  const camStatus = document.getElementById('cam-status');
-  let camAvailable = false;
-  let camRunning = false;
-
-  function camUrl(path) {
-    return location.protocol + '//' + location.hostname + ':81' + path;
-  }
-
-  function setCamRunning(on) {
-    camRunning = on && camAvailable;
-    if (camRunning) {
-      camImg.src = camUrl('/stream');
-      camImg.style.display = 'block';
-      camPlaceholder.style.display = 'none';
-      camToggle.textContent = 'Stop';
-    } else {
-      camImg.removeAttribute('src');
-      camImg.style.display = 'none';
-      camPlaceholder.style.display = 'flex';
-      camPlaceholder.textContent = camAvailable ? 'Camera off' : 'No camera detected';
-      camToggle.textContent = 'Start';
-    }
-    resizeMasonry();
-  }
-
-  if (camToggle) camToggle.addEventListener('click', () => setCamRunning(!camRunning));
-  if (camImg) camImg.addEventListener('error', () => { if (camRunning) setCamRunning(false); });
-
-  let camInitDone = false;
   window.addEventListener('angleros:status', (e) => {
     const s = e.detail || {};
     updateJob(s.print);
-    if (typeof s.camera !== 'boolean') return;
-
-    if (!camInitDone) {
-      camInitDone = true;
-      camAvailable = s.camera;
-      camToggle.disabled = !camAvailable;
-      camStatus.textContent = camAvailable ? 'Live view + print light (Flash LED panel)' : '';
-      // Defer auto-start so the stream doesn't compete with the page's own
-      // assets for the ESP32's limited Wi-Fi throughput while loading.
-      if (camAvailable) setTimeout(() => { if (!camRunning) setCamRunning(true); }, 1500);
-      return;
-    }
-
-    // Track camera enable/disable done from the System tab without a reload.
-    if (s.camera !== camAvailable) {
-      camAvailable = s.camera;
-      camToggle.disabled = !camAvailable;
-      camStatus.textContent = camAvailable ? 'Live view + print light (Flash LED panel)' : 'Camera disabled in System tab';
-      if (!camAvailable && camRunning) setCamRunning(false);
-      else if (camAvailable && !camRunning) setCamRunning(true);
-      else setCamRunning(camRunning);
-    }
-  });
-
-  // Pause the stream while the tab is hidden — it otherwise keeps saturating
-  // the board's Wi-Fi in the background.
-  let camPausedByTab = false;
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      if (camRunning) { camPausedByTab = true; setCamRunning(false); }
-    } else if (camPausedByTab) {
-      camPausedByTab = false;
-      setTimeout(() => setCamRunning(true), 400);
-    }
   });
 
   // ---- Init ----
@@ -628,5 +561,4 @@
   loadFlashBrightness();
   loadMacros();
   loadFiles();
-  setCamRunning(false);
 })();

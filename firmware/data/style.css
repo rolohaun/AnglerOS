@@ -1000,17 +1000,6 @@ select { cursor: pointer; }
   .print-stats { grid-template-columns: repeat(2, 1fr); row-gap: .8rem; }
 }
 
-/* Camera panel */
-.cam-wrap {
-  position: relative; border-radius: 8px; overflow: hidden;
-  background: #15181d; border: 1px solid var(--border);
-  min-height: 140px; display: flex; align-items: center; justify-content: center;
-}
-.cam-wrap img { width: 100%; display: none; }
-.cam-placeholder {
-  display: flex; align-items: center; justify-content: center;
-  color: var(--muted); min-height: 140px; font-size: .85rem;
-}
 
 /* Print job */
 .job-progress {
@@ -1030,8 +1019,3 @@ select { cursor: pointer; }
 .gcode-size { color: var(--muted); font-size: .75rem; }
 .gcode-empty { padding: .6rem 0; }
 .upload-btn { cursor: pointer; display: inline-block; }
-
-/* Camera settings (System tab) */
-.cam-flags { display: flex; gap: 1.2rem; margin: .6rem 0; color: var(--muted); }
-.cam-flags label { display: flex; align-items: center; gap: .4rem; cursor: pointer; }
-.system-camera input[type=range] { width: 100%; }

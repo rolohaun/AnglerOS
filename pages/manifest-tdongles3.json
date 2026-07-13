@@ -1,5 +1,5 @@
 {
-  "name": "AnglerOS (ESP32-S3-CAM)",
+  "name": "AnglerOS (LILYGO T-Dongle-S3)",
   "version": "0.0.0-dev",
   "home_assistant_domain": "",
   "new_install_prompt_erase": true,
@@ -8,7 +8,7 @@
     {
       "chipFamily": "ESP32-S3",
       "parts": [
-        { "path": "firmware/angleros-esp32s3cam.bin", "offset": 0 }
+        { "path": "firmware/angleros-tdongles3.bin", "offset": 0 }
       ]
     }
   ]

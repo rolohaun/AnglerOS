@@ -1,101 +1,81 @@
-# Hardware & wiring
+# Hardware and wiring
 
-## Boards
+AnglerOS supports one controller: the **LILYGO T-Dongle-S3**. It has an
+ESP32-S3, 16MB QSPI flash, no PSRAM, a 160x80 ST7735 display, an APA102 status
+LED, native USB-OTG, and a TF card slot connected by 4-bit SDMMC.
 
-- **ESP32-CAM** (AI-Thinker / Aideepen) - plain ESP32-LX6, 4MB flash, PSRAM,
-  OV3660 camera, onboard white flash LED. Programmed via the bundled **CH340**
-  USB-serial adapter (Micro-USB), which also powers it during setup. Printer
-  link: **UART** (no USB host hardware on this chip).
-- **ESP32-S3-CAM** (dual USB-C) - ESP32-S3-WROOM-1 **N16R8** (16MB flash, 8MB
-  PSRAM), OV3660 camera, microSD slot. Two USB-C ports: one **CH340C UART**
-  (programming, logs, Improv) and one **native USB-OTG**. Printer link:
-  **USB-OTG host** - AnglerOS plugs straight into the printer's USB port and
-  talks CDC-ACM serial, the same way OctoPrint does.
-- **BigTreeTech SKR Pico** - RP2040 mainboard running Marlin. Flashed via
-  BOOTSEL (drag-and-drop `.uf2`).
+The printer mainboard is separate. The first generated Marlin profile targets
+the **BigTreeTech SKR Pico**, but other printer-board profiles can still be
+added without changing the AnglerOS hardware target.
 
-## ESP32-CAM pin plan (camera ON, SD + printer UART mode)
+## TF card: 4-bit SDMMC
 
-The camera occupies most GPIOs. AnglerOS mounts the microSD card in one-bit
-SD_MMC mode and keeps a hardware UART available for the printer.
+AnglerOS mounts the T-Dongle TF card at SDMMC high speed with all four data
+lines. G-code uploads stream directly to the card, so files are not limited by
+the dongle's 16MB flash.
 
-| Function | ESP32-CAM GPIO | Notes |
-|----------|----------------|-------|
-| Camera (OV3660) | standard AI-Thinker camera bus | unchanged |
-| microSD | GPIO 14 / 15 / 2 | SD_MMC one-bit mode |
-| Flash LED | GPIO 4 | PWM brightness controlled from the dashboard |
-| UART TX to printer RX | **GPIO 12** | ESP32 `Serial1` TX |
-| UART RX from printer TX | **GPIO 13** | ESP32 `Serial1` RX |
-| GND | GND | common ground with the mainboard |
+| Signal | GPIO |
+|--------|------|
+| SDMMC CLK | 12 |
+| SDMMC CMD | 16 |
+| SDMMC D0 | 14 |
+| SDMMC D1 | 17 |
+| SDMMC D2 | 21 |
+| SDMMC D3 | 18 |
 
-Default baud is **250000** (Marlin's default `BAUDRATE`). GPIO12 is an ESP32
-boot strapping pin, so the printer RX input should not pull it high or low
-during reset. Most printer UART RX pins are high-impedance inputs, which is the
-expected wiring here.
+The System tab reports card type, mount mode, capacity, and used space.
 
-## ESP32-CAM microSD storage mode
+## Printer links
 
-AnglerOS attempts to mount the ESP32-CAM microSD slot in one-bit SD_MMC mode at
-boot. If a card is mounted, the System tab reports its capacity and usage.
+AnglerOS starts both links and prefers USB whenever a CDC-ACM printer is
+attached. The dashboard reports `usb`, `uart`, or `none` for the active link.
 
-On the AI-Thinker-style ESP32-CAM, SD_MMC one-bit mode uses GPIO14 as the SD
-clock. Earlier AnglerOS builds used GPIO14, then GPIO4, for UART TX. Current
-builds use GPIO12 for UART TX so SD storage and the printer serial bridge can
-run together while the flash LED stays off.
+### QWIIC UART
 
-Logic levels are 3.3V on both sides - no level shifter needed. Do **not**
-back-power the mainboard from the ESP32; power each board from its own supply
-and share only GND + the two UART lines.
+UART is the simplest setup because it leaves the dongle's USB-A plug available
+for power. Logic is 3.3V. Cross TX and RX, share ground, and do not connect a 5V
+pin between boards.
 
-> **Printer side (SKR Pico):** AnglerOS's generated Marlin config sets
-> `SERIAL_PORT = -1` (USB) **and** `SERIAL_PORT_2 = 0` (UART0 = the **TFT
-> header**), so both links work out of the box. Wiring for the ESP32-CAM:
->
-> | ESP32-CAM | SKR Pico TFT header |
-> |-----------|---------------------|
-> | GPIO 12 (TX) | RX |
-> | GPIO 13 (RX) | TX |
-> | GND | GND |
->
-> Baud is **250000** on both sides (Marlin's default `BAUDRATE` covers port 2).
-> Do not connect the TFT header's 5V pin. Rebuild + reflash Marlin with a fresh
-> config so `SERIAL_PORT_2` is present before testing.
+| T-Dongle-S3 | Printer UART |
+|-------------|--------------|
+| GPIO 43 (TX) | RX |
+| GPIO 44 (RX) | TX |
+| GND | GND |
 
-## ESP32-S3-CAM: USB-OTG printer link (OctoPrint-style)
+The default baud rate is **250000**. For SKR Pico, the generated Marlin config
+uses `SERIAL_PORT_2 = 0`, which exposes UART0 on the TFT header alongside native
+USB serial.
 
-On the S3-CAM the printer connection is a USB cable, no wiring:
+### USB-OTG host
 
-1. Flash AnglerOS via the **UART/CH340 USB-C port** and set up Wi-Fi as usual.
-2. Connect the **other USB-C port (OTG)** to the printer mainboard's USB port.
-3. Power the S3-CAM through the CH340 port or its 5V pin (this also supplies
-   VBUS to the OTG port so the printer detects a host).
-4. Marlin must use its **native USB serial**: `SERIAL_PORT = -1`. AnglerOS's
-   generated SKR Pico config already sets this.
+The T-Dongle has only one USB connector. In normal AnglerOS operation it is
+configured as a USB host and can talk to a Marlin USB CDC port. Unlike the old
+dual-port controller, it cannot simultaneously use that connector for PC
+serial setup.
 
-The dashboard's link indicator shows `usb` once the printer enumerates. If a
-USB-C-to-USB-C cable does not enumerate (some boards omit the CC resistors for
-host role), use a **USB-C OTG adapter + USB-A cable** instead.
+The USB-A connector is male, so connecting it to a printer normally requires a
+USB-A female OTG adapter or coupler plus the printer's cable. The dongle must
+also receive 5V power while acting as host. Verify the adapter/power arrangement
+does not back-feed the printer before connecting it.
 
-Board pin map (confirmed against the vendor pinout): camera XCLK=15 SIOD=4
-SIOC=5 VSYNC=6 HREF=7 PCLK=13 Y2..Y9=11,9,8,10,12,18,17,16; microSD (1-bit)
-CLK=39 CMD=38 D0=40; USB OTG D-/D+ = GPIO19/20; onboard LED = **GPIO2** (PWM,
-drives the dashboard brightness slider); WS2812 RGB = GPIO48 (unused, future
-status light). Strapping pins on the S3 are 0/3/45/46 — none used by AnglerOS.
-Free GPIOs if a UART fallback is ever needed: 14, 21, 47. The printer UART is
-disabled on this board — USB-OTG is the link.
+## Onboard light
 
-## Flashing AnglerOS onto the ESP32
+The dashboard Printer Light card drives the onboard APA102 as white with
+adjustable brightness. Data is GPIO 40, clock is GPIO 39, and the light boots
+off.
 
-Use the [browser flasher](../pages/) (Chrome/Edge). The public flasher targets
-the **ESP32-S3-CAM** only.
+## Flashing AnglerOS
 
-Connect the **UART/CH340 USB-C port** to your PC, not the OTG port. If flashing
-doesn't start, hold the **BOOT** button while plugging in. After setup, use the
-second USB-C port as the USB-OTG printer link.
+Use the [browser flasher](../pages/) in Chrome or Edge. Hold **BOOT** while
+plugging the T-Dongle into the PC if it does not enter download mode. After
+flashing, power-cycle without holding BOOT.
 
-## Flashing Marlin onto the SKR Pico
+For first-time Wi-Fi setup, join **AnglerOS-Setup** and open
+`http://192.168.4.1`. USB serial provisioning is intentionally disabled because
+the same USB controller is reserved for the printer host.
 
-1. AnglerOS generates the firmware and provides a `firmware.uf2`.
-2. Hold **BOOT** on the SKR Pico, plug in USB (or press RESET while holding
-   BOOT). It mounts as a drive named `RPI-RP2`.
-3. Copy `firmware.uf2` onto that drive. The board reboots into Marlin.
+## Flashing Marlin onto SKR Pico
+
+1. Generate or download `firmware.uf2` from AnglerOS.
+2. Hold **BOOT** on the SKR Pico while connecting USB. It mounts as `RPI-RP2`.
+3. Copy `firmware.uf2` to that drive. The board reboots into Marlin.

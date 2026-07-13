@@ -1,4 +1,4 @@
-// Onboard ESP32-CAM flash LED brightness control.
+// T-Dongle-S3 onboard APA102 light brightness control.
 #pragma once
 #include <Arduino.h>
 

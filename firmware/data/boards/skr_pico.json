@@ -12,7 +12,7 @@
   "serial_port": -1,
   "serial_port_note": "-1 = native USB CDC, so AnglerOS (USB-OTG) and desktop hosts like OctoPrint/Pronterface can talk to the board over its USB port.",
   "serial_port_2": 0,
-  "serial_port_2_note": "UART0 = the SKR Pico's TFT header, giving the ESP32-CAM's wired UART link its own port alongside USB.",
+  "serial_port_2_note": "UART0 = the SKR Pico's TFT header, giving the T-Dongle-S3 QWIIC UART its own port alongside USB.",
   "fw_artifact": "firmware.uf2",
   "flash_hint": "Hold BOOT on the SKR Pico and plug in USB (it appears as a drive named RPI-RP2), then copy the firmware onto that drive. The board reboots into Marlin.",
   "notes": "TMC2209 drivers share one UART with per-driver addressing; the SKR Pico pins file handles that automatically once MOTHERBOARD is set.",

@@ -10,14 +10,11 @@ static void onLineFromTransport(const String &line) {
   if (s_cb) s_cb(line);
 }
 
-void printerLinkBegin(uint32_t uartBaud, bool startUsbHost) {
+void printerLinkBegin(uint32_t uartBaud) {
   printerUartOnLine(&onLineFromTransport);
   printerUartBegin(uartBaud);
-
-  if (startUsbHost) {
-    printerUsbOnLine(&onLineFromTransport);
-    printerUsbBegin();
-  }
+  printerUsbOnLine(&onLineFromTransport);
+  printerUsbBegin();
 }
 
 void printerLinkPump() {

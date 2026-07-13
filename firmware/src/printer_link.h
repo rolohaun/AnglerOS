@@ -1,12 +1,9 @@
-// Unified printer link. Routes G-code to whichever transport is available:
-// USB-OTG host (ESP32-S3, OctoPrint-style) when a printer is attached, else
-// the hardware UART (ESP32-CAM wiring). The web UI doesn't care which.
+// Unified T-Dongle-S3 printer link. USB-OTG is preferred when attached; the
+// QWIIC UART remains available as a wiring-friendly fallback.
 #pragma once
 #include <Arduino.h>
 
-// startUsbHost: on the S3 the OTG port is shared with the setup/Improv USB
-// console, so the host stack is only started once Wi-Fi is provisioned.
-void printerLinkBegin(uint32_t uartBaud, bool startUsbHost);
+void printerLinkBegin(uint32_t uartBaud);
 
 // Call frequently from loop(): pumps both transports and dispatches lines.
 void printerLinkPump();

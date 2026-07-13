@@ -6,13 +6,12 @@ bootloader, partition table, boot_app0, the app, and the LittleFS filesystem
 into one `.bin` using `esptool merge_bin`.
 
 Usage:
-    python scripts/merge_bin.py --env esp32cam --chip esp32 --flash-size 4MB \
-        --fs-offset 0x310000 --out pages/firmware/angleros-esp32cam.bin
-    python scripts/merge_bin.py --env esp32s3cam --chip esp32s3 --flash-size 16MB \
-        --fs-offset 0xc90000 --out pages/firmware/angleros-esp32s3cam.bin
+    python scripts/merge_bin.py --env tdongles3 --chip esp32s3 --flash-size 16MB \
+        --fs-offset 0xc90000 --out pages/firmware/angleros-tdongles3.bin
 """
 
 import argparse
+import importlib.util
 import os
 import subprocess
 import sys
@@ -20,7 +19,6 @@ from pathlib import Path
 
 # The second-stage bootloader lives at a chip-specific offset.
 BOOTLOADER_OFFSET = {
-    "esp32": "0x1000",
     "esp32s3": "0x0",
 }
 
@@ -40,6 +38,17 @@ def find(build_dir: Path, name: str) -> Path:
     if hit is None:
         sys.exit(f"error: could not find {name} under {build_dir} or PlatformIO packages")
     return hit
+
+
+def esptool_command() -> list[str]:
+    if importlib.util.find_spec("esptool") is not None:
+        return [sys.executable, "-m", "esptool"]
+
+    bundled = pio_core_dir() / "packages" / "tool-esptoolpy" / "esptool.py"
+    if bundled.exists():
+        return [sys.executable, str(bundled)]
+
+    sys.exit("error: esptool is not installed and PlatformIO's bundled copy was not found")
 
 
 def main() -> None:
@@ -69,7 +78,7 @@ def main() -> None:
         merge_args += [offset, str(find(build_dir, name))]
 
     cmd = [
-        sys.executable, "-m", "esptool", "--chip", args.chip,
+        *esptool_command(), "--chip", args.chip,
         "merge_bin", "-o", str(out), "--fill-flash-size", args.flash_size,
         *merge_args,
     ]

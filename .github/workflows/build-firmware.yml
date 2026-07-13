@@ -1,6 +1,6 @@
 name: Build AnglerOS firmware & publish flasher
 
-# Builds the ESP32-S3-CAM firmware, merges it into a single flashable image, and
+# Builds the LILYGO T-Dongle-S3 firmware, merges it into one flashable image, and
 # publishes the ESP Web Tools browser flasher (pages/) to GitHub Pages.
 
 on:
@@ -37,16 +37,16 @@ jobs:
       - name: Compress web assets (served with Content-Encoding gzip)
         run: python scripts/gzip_fs.py firmware/data
 
-      - name: Build firmware + LittleFS images (ESP32-S3-CAM)
+      - name: Build firmware + LittleFS images (T-Dongle-S3)
         working-directory: firmware
         run: |
-          pio run -e esp32s3cam
-          pio run -e esp32s3cam -t buildfs
+          pio run -e tdongles3
+          pio run -e tdongles3 -t buildfs
 
       - name: Merge into single flash image
         run: |
-          python scripts/merge_bin.py --env esp32s3cam --chip esp32s3 --flash-size 16MB \
-            --fs-offset 0xc90000 --out pages/firmware/angleros-esp32s3cam.bin
+          python scripts/merge_bin.py --env tdongles3 --chip esp32s3 --flash-size 16MB \
+            --fs-offset 0xc90000 --out pages/firmware/angleros-tdongles3.bin
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

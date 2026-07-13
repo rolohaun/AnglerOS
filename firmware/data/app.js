@@ -248,92 +248,7 @@
     const network = s.mode === 'sta'
       ? (s.ssid || 'Wi-Fi') + ' / ' + (s.rssi !== undefined ? s.rssi + ' dBm' : 'RSSI unknown')
       : 'Setup AP / ' + (s.ip || 'no IP');
-    setText('sys-network', network + (s.printer_uart === false ? ' / UART unavailable' : ''));
-  }
-
-  // --- Camera settings (System tab) ---
-  const camPanel = document.getElementById('camera-settings');
-  const camEnabled = document.getElementById('cam-enabled');
-  const camRes = document.getElementById('cam-res');
-  const camFps = document.getElementById('cam-fps');
-  const camQuality = document.getElementById('cam-quality');
-  const camQualityLabel = document.getElementById('cam-quality-label');
-  const camVflip = document.getElementById('cam-vflip');
-  const camHmirror = document.getElementById('cam-hmirror');
-  const camSetStatus = document.getElementById('cam-set-status');
-  let camSettingsLoaded = false;
-  let camSaveTimer = null;
-
-  function camQualityText() {
-    if (camQualityLabel) camQualityLabel.textContent = '(' + camQuality.value + ')';
-  }
-
-  function camControlsEnabled(on) {
-    [camRes, camFps, camQuality, camVflip, camHmirror].forEach((el) => { el.disabled = !on; });
-  }
-
-  async function saveCameraSettings(includeEnabled) {
-    if (camSetStatus) camSetStatus.textContent = 'Applying...';
-    try {
-      const body = new URLSearchParams({
-        framesize: camRes.value,
-        fps: camFps.value,
-        quality: camQuality.value,
-        vflip: camVflip.checked ? '1' : '0',
-        hmirror: camHmirror.checked ? '1' : '0',
-      });
-      if (includeEnabled) body.set('enabled', camEnabled.checked ? '1' : '0');
-      const r = await fetch('/api/camera', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body,
-      });
-      if (!r.ok) throw new Error(r.status);
-      if (camSetStatus) {
-        camSetStatus.textContent = camEnabled.checked
-          ? 'Applied - takes effect on the live stream immediately.'
-          : 'Camera disabled.';
-      }
-    } catch (e) {
-      if (camSetStatus) camSetStatus.textContent = 'Could not apply settings.';
-    }
-  }
-
-  function queueCameraSave() {
-    clearTimeout(camSaveTimer);
-    camSaveTimer = setTimeout(() => saveCameraSettings(false), 250);
-  }
-
-  async function initCameraSettings(hasCamera) {
-    if (camSettingsLoaded || !camPanel) return;
-    if (hasCamera === undefined) return;  // wait for a status payload
-    camSettingsLoaded = true;
-    try {
-      const r = await fetch('/api/camera', { cache: 'no-store' });
-      const s = await r.json();
-      // The panel shows whenever the board has camera hardware, even while
-      // the camera is switched off — that's where you switch it back on.
-      if (!s.supported) { camPanel.hidden = true; return; }
-      camEnabled.checked = !!s.enabled;
-      camRes.value = String(s.framesize);
-      camFps.value = String(s.fps);
-      camQuality.value = s.quality;
-      camVflip.checked = !!s.vflip;
-      camHmirror.checked = !!s.hmirror;
-      camQualityText();
-      camControlsEnabled(!!s.enabled);
-      camPanel.hidden = false;
-      camEnabled.addEventListener('change', () => {
-        camControlsEnabled(camEnabled.checked);
-        saveCameraSettings(true);
-      });
-      [camRes, camFps, camVflip, camHmirror].forEach((el) =>
-        el.addEventListener('change', queueCameraSave));
-      camQuality.addEventListener('input', camQualityText);
-      camQuality.addEventListener('change', queueCameraSave);
-    } catch (e) {
-      camSettingsLoaded = false;  // retry on the next status poll
-    }
+    setText('sys-network', network + (s.printer_available === false ? ' / printer link unavailable' : ''));
   }
 
   async function poll() {
@@ -348,7 +263,6 @@
       if (!submitting) setup.hidden = s.mode !== 'ap';
       updateSystem(s);
       window.dispatchEvent(new CustomEvent('angleros:status', { detail: s }));
-      initCameraSettings(s.camera);
     } catch (e) {
       dot.className = 'dot dot-off';
       text.textContent = 'offline';

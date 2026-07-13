@@ -72,21 +72,6 @@
             </div>
           </section>
 
-          <section class="card widget camera-card" data-widget="camera" draggable="true">
-            <div class="card-title">
-              <span><span class="widget-ico">V</span>Camera</span>
-              <span class="card-actions">
-                <button id="cam-toggle" class="btn-secondary btn-sm" type="button">Start</button>
-                <span class="drag-handle" title="Drag panel">::</span>
-              </span>
-            </div>
-            <div class="cam-wrap">
-              <img id="cam-stream" alt="Camera stream" />
-              <div id="cam-placeholder" class="cam-placeholder">Camera off</div>
-            </div>
-            <small id="cam-status" class="muted"></small>
-          </section>
-
           <section class="card widget files-card" data-widget="files" draggable="true">
             <div class="card-title">
               <span><span class="widget-ico">F</span>G-code Files</span>
@@ -173,7 +158,7 @@
 
           <section class="card widget light-card" data-widget="light" draggable="true">
             <div class="card-title">
-              <span><span class="widget-ico">L</span>Flash LED</span>
+              <span><span class="widget-ico">L</span>Printer Light</span>
               <span class="drag-handle" title="Drag panel">::</span>
             </div>
             <div class="light-panel">
@@ -186,7 +171,7 @@
                 <button id="flash-toggle" class="btn-primary" type="button">Turn on</button>
                 <button id="flash-off" class="btn-secondary" type="button">Off</button>
               </div>
-              <small id="flash-status" class="muted">Flash LED off</small>
+              <small id="flash-status" class="muted">Printer light off</small>
             </div>
           </section>
 
@@ -294,47 +279,6 @@
                 <button id="printer-name-clear" class="btn-secondary" type="button">Clear</button>
               </div>
               <small id="printer-name-status" class="muted"></small>
-            </div>
-          </section>
-
-          <section class="system-panel system-camera" id="camera-settings" hidden>
-            <div class="card-title">
-              <span><span class="widget-ico">V</span>Camera</span>
-            </div>
-            <div class="settings-panel">
-              <div class="cam-flags cam-enable-row">
-                <label><input id="cam-enabled" type="checkbox" /> Camera enabled</label>
-                <small class="muted">Off frees memory and Wi-Fi bandwidth; takes effect immediately.</small>
-              </div>
-              <div class="field">
-                <label for="cam-res">Resolution</label>
-                <select id="cam-res">
-                  <option value="5">QVGA (320x240)</option>
-                  <option value="7">HVGA (480x320)</option>
-                  <option value="8">VGA (640x480)</option>
-                  <option value="9">SVGA (800x600)</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="cam-fps">Frame rate limit</label>
-                <select id="cam-fps">
-                  <option value="5">5 fps (least bandwidth)</option>
-                  <option value="10">10 fps</option>
-                  <option value="15">15 fps</option>
-                  <option value="20">20 fps</option>
-                  <option value="0">Unlimited</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="cam-quality">JPEG quality <b id="cam-quality-label"></b></label>
-                <input id="cam-quality" type="range" min="10" max="40" step="1" />
-                <small class="muted">Left = sharper, right = smoother stream</small>
-              </div>
-              <div class="cam-flags">
-                <label><input id="cam-vflip" type="checkbox" /> Flip vertically</label>
-                <label><input id="cam-hmirror" type="checkbox" /> Mirror horizontally</label>
-              </div>
-              <small id="cam-set-status" class="muted"></small>
             </div>
           </section>
 

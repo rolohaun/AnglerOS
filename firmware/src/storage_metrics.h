@@ -1,4 +1,4 @@
-// Storage initialization and capacity metrics for LittleFS + ESP32-CAM SD slot.
+// Storage initialization and capacity metrics for LittleFS + T-Dongle TF slot.
 #pragma once
 #include <Arduino.h>
 

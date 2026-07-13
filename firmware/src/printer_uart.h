@@ -1,11 +1,7 @@
-// UART bridge to the printer mainboard (Marlin over serial).
-// The ESP32-CAM talks to the SKR Pico on a spare hardware UART; the web UI
-// streams G-code to it and its responses back over a WebSocket.
+// T-Dongle-S3 QWIIC UART bridge to the printer mainboard (Marlin serial).
 #pragma once
 #include <Arduino.h>
 
-// Start the link. RX/TX pins are chosen to avoid the ESP32-CAM strapping pins
-// (see docs/hardware.md).
 void printerUartBegin(uint32_t baud);
 bool printerUartAvailable();
 

@@ -1,7 +1,5 @@
 #include "printer_usb.h"
 
-#if CONFIG_IDF_TARGET_ESP32S3
-
 // Minimal CDC-ACM host on ESP-IDF's usb_host stack. Marlin boards (RP2040,
 // STM32) enumerate as standard CDC-ACM serial devices, so this is the same
 // path OctoPrint uses — just with the ESP32-S3 as the USB host.
@@ -295,13 +293,3 @@ void printerUsbPump() {
     }
   }
 }
-
-#else  // ---- stubs for chips without USB-OTG (plain ESP32-CAM) ----------------
-
-void printerUsbBegin() {}
-bool printerUsbConnected() { return false; }
-void printerUsbOnLine(void (*)(const String &)) {}
-void printerUsbSend(const String &) {}
-void printerUsbPump() {}
-
-#endif

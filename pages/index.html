@@ -40,7 +40,7 @@
       content: ""; width: .55rem; height: .55rem; border-radius: 50%;
       background: var(--accent); box-shadow: 0 0 0 3px rgba(63, 208, 106, .12);
     }
-    .install { margin-top: 1.5rem; }
+    .install { margin-top: .75rem; }
     esp-web-install-button {
       --esp-tools-button-color: #10131a;
       --esp-tools-button-text-color: var(--accent);
@@ -66,36 +66,30 @@
 <body>
   <div class="card">
     <h1>Install <span>AnglerOS</span></h1>
-    <p>Flash AnglerOS onto your ESP32-S3-CAM straight from the browser &mdash; no
-       PlatformIO, no command line.</p>
-    <div class="board-pill">ESP32-S3-CAM &middot; USB-OTG printer link</div>
+    <p>Flash AnglerOS onto a LILYGO T-Dongle-S3 straight from the browser.
+       This build uses its TF card in 4-bit SDMMC mode.</p>
 
+    <div class="board-pill">LILYGO T-Dongle-S3 &middot; 16MB flash</div>
     <div class="install">
-      <esp-web-install-button id="installer"
-        manifest="manifest-esp32s3cam.json"></esp-web-install-button>
+      <esp-web-install-button
+        manifest="manifest-tdongles3.json"></esp-web-install-button>
     </div>
 
     <p class="note">
-      Requires <strong>Chrome</strong> or <strong>Edge</strong>. Plug the
-      <strong>UART/CH340 USB-C port</strong> into your PC, click
+      Requires <strong>Chrome</strong> or <strong>Edge</strong>. Plug the board
+      into your PC, click
       <em>Connect</em>, then <em>Install</em>. If flashing doesn't start, hold
       the <code>BOOT</code> button while connecting to enter the bootloader.
-      The second USB-C port is the native <strong>USB-OTG</strong> printer link.
     </p>
 
     <details class="after" open>
-      <summary>After installing — connecting to Wi-Fi</summary>
+      <summary>After installing: connect to Wi-Fi</summary>
       <ol>
-        <li>When the installer offers <strong>Connect to Wi-Fi</strong>, pick
-          your network and enter the password. Done — click
-          <strong>Visit Device</strong>.</li>
-        <li><strong>No Wi-Fi step appeared?</strong> Unplug the board, plug it
-          back in, and click <em>Connect → Next</em> again — the reset sometimes
-          needs a nudge on these boards.</li>
-        <li><strong>Still nothing?</strong> The board also creates its own
-          <strong>“AnglerOS-Setup”</strong> Wi-Fi hotspot. Join it from your
-          phone or laptop, and a setup page opens where you enter your network.
-          The board then reboots and joins it.</li>
+        <li>Unplug the dongle from the PC and power it for normal use.</li>
+        <li>Join the <strong>AnglerOS-Setup</strong> Wi-Fi network from a phone
+          or laptop.</li>
+        <li>Open <code>http://192.168.4.1</code>, choose your Wi-Fi network,
+          and enter its password. The dongle reboots and joins it.</li>
       </ol>
       <p class="muted">See the <a href="../docs/">setup docs</a> for details.</p>
     </details>

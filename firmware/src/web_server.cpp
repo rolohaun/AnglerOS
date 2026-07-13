@@ -4,13 +4,8 @@
 #include "system_metrics.h"
 #include "storage_metrics.h"
 #include "flash_led.h"
-#include "camera.h"
 #include "gcode_store.h"
 #include "print_job.h"
-
-#ifndef ANGLEROS_BOARD_NAME
-#define ANGLEROS_BOARD_NAME "ESP32"
-#endif
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -27,7 +22,7 @@ bool webServerPendingRestart() { return s_pendingRestart; }
 static void handleStatus(AsyncWebServerRequest *req) {
   JsonDocument doc;
   doc["fw"] = s_fwVersion;
-  doc["chip"] = ANGLEROS_BOARD_NAME;
+  doc["chip"] = "LILYGO T-Dongle-S3";
 
   bool sta = (WiFi.getMode() & WIFI_MODE_STA) && WiFi.status() == WL_CONNECTED;
   doc["mode"] = sta ? "sta" : "ap";
@@ -43,7 +38,7 @@ static void handleStatus(AsyncWebServerRequest *req) {
   doc["cpu_load"] = systemCpuLoadPercent();
   doc["cpu_freq_mhz"] = getCpuFrequencyMhz();
   doc["uptime"] = (uint32_t)(millis() / 1000);
-  doc["printer_uart"] = printerLinkAvailable();
+  doc["printer_available"] = printerLinkAvailable();
   doc["printer_link"] = printerLinkActive();
   doc["fs_used"] = storageLittleFsUsed();
   doc["fs_total"] = storageLittleFsTotal();
@@ -53,7 +48,6 @@ static void handleStatus(AsyncWebServerRequest *req) {
   doc["sd_used"] = storageSdUsed();
   doc["sd_total"] = storageSdTotal();
   doc["flash_brightness"] = flashLedBrightness();
-  doc["camera"] = cameraAvailable();
 
   JsonObject pj = doc["print"].to<JsonObject>();
   pj["state"] = printJobState();
@@ -67,50 +61,6 @@ static void handleStatus(AsyncWebServerRequest *req) {
   String out;
   serializeJson(doc, out);
   req->send(200, "application/json", out);
-}
-
-// ---- Camera settings ---------------------------------------------------------
-
-static void handleCameraGet(AsyncWebServerRequest *req) {
-  JsonDocument doc;
-  doc["available"] = cameraAvailable();
-  doc["supported"] = cameraSupported();
-  doc["enabled"] = cameraEnabled();
-  CameraSettings s = cameraGetSettings();
-  doc["framesize"] = s.framesize;
-  doc["quality"] = s.quality;
-  doc["fps"] = s.fps;
-  doc["vflip"] = s.vflip;
-  doc["hmirror"] = s.hmirror;
-  String out;
-  serializeJson(doc, out);
-  req->send(200, "application/json", out);
-}
-
-static void handleCameraSet(AsyncWebServerRequest *req) {
-  if (!cameraSupported()) {
-    req->send(503, "application/json", "{\"ok\":false,\"err\":\"no camera\"}");
-    return;
-  }
-  auto intParam = [&](const char *name, int fallback) {
-    return req->hasParam(name, true) ? req->getParam(name, true)->value().toInt() : fallback;
-  };
-
-  bool ok = true;
-  if (req->hasParam("enabled", true)) {
-    ok = cameraSetEnabled(intParam("enabled", 1) != 0);
-  }
-
-  CameraSettings s = cameraGetSettings();
-  s.framesize = (uint8_t)intParam("framesize", s.framesize);
-  s.quality = (uint8_t)intParam("quality", s.quality);
-  s.fps = (uint8_t)intParam("fps", s.fps);
-  s.vflip = intParam("vflip", s.vflip) != 0;
-  s.hmirror = intParam("hmirror", s.hmirror) != 0;
-  ok = cameraApplySettings(s, /*persist=*/true) && ok;
-
-  req->send(ok ? 200 : 503, "application/json",
-            ok ? "{\"ok\":true}" : "{\"ok\":false,\"err\":\"camera failed to start\"}");
 }
 
 // ---- G-code files + print control ------------------------------------------
@@ -144,27 +94,9 @@ static void handleGcodeList(AsyncWebServerRequest *req) {
 static File s_upload;
 static bool s_uploadRejected = false;
 static String s_uploadPath;
-static uint8_t s_uploadFallbackBuf[16 * 1024];
-static uint8_t *s_uploadBuf = s_uploadFallbackBuf;
-static size_t s_uploadBufCap = sizeof(s_uploadFallbackBuf);
+static uint8_t s_uploadBuf[32 * 1024];
+static const size_t s_uploadBufCap = sizeof(s_uploadBuf);
 static size_t s_uploadBufLen = 0;
-
-static void uploadEnsureBuffer() {
-  if (s_uploadBuf != s_uploadFallbackBuf) return;
-
-  // The ESP32-S3-CAM has 8MB PSRAM. Use it as a rolling upload window so
-  // browser uploads are not throttled by tiny SD/LittleFS write buffers. Files
-  // can still be much larger than this; the window flushes repeatedly.
-  if (!ESP.getPsramSize()) return;
-
-  const size_t target = 512 * 1024;
-  uint8_t *buf = (uint8_t *)ps_malloc(target);
-  if (buf) {
-    s_uploadBuf = buf;
-    s_uploadBufCap = target;
-    Serial.printf("[upload] using %uKB PSRAM buffer\n", (unsigned)(s_uploadBufCap / 1024));
-  }
-}
 
 static bool uploadFlush() {
   if (!s_upload || !s_uploadBufLen) return true;
@@ -176,14 +108,14 @@ static bool uploadFlush() {
 
 static void uploadWrite(const uint8_t *data, size_t len) {
   while (!s_uploadRejected && s_upload && len) {
-    size_t room = sizeof(s_uploadBuf) - s_uploadBufLen;
+    size_t room = s_uploadBufCap - s_uploadBufLen;
     size_t n = min(room, len);
     memcpy(s_uploadBuf + s_uploadBufLen, data, n);
     s_uploadBufLen += n;
     data += n;
     len -= n;
 
-    if (s_uploadBufLen == sizeof(s_uploadBuf) && !uploadFlush()) {
+    if (s_uploadBufLen == s_uploadBufCap && !uploadFlush()) {
       s_uploadRejected = true;
     }
   }
@@ -193,7 +125,6 @@ static void uploadBegin(const String &filename, size_t totalBytes) {
   s_uploadRejected = false;
   s_uploadPath = gcodeSanitizeName(filename);
   s_uploadBufLen = 0;
-  uploadEnsureBuffer();
 
   // Reject uploads that clearly can't fit (leave ~64KB headroom).
   if (totalBytes + 65536 > gcodeFreeBytes()) {
@@ -347,9 +278,6 @@ void webServerBegin(const char *fwVersion) {
   server.on("/api/wifi", HTTP_POST, handleWifiSave);
   server.on("/api/flash", HTTP_GET, handleFlashStatus);
   server.on("/api/flash", HTTP_POST, handleFlashSave);
-
-  server.on("/api/camera", HTTP_GET, handleCameraGet);
-  server.on("/api/camera", HTTP_POST, handleCameraSet);
 
   // G-code file management + print control.
   server.on("/api/gcode/list", HTTP_GET, handleGcodeList);
