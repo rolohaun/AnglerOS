@@ -143,6 +143,9 @@
   function setLink(state) {
     linkEl.textContent = state;
     linkEl.className = 'link-pill ' + (state === 'connected' ? 'link-on' : 'link-off');
+    window.dispatchEvent(new CustomEvent('angleros:printer-socket', {
+      detail: { connected: state === 'connected' },
+    }));
   }
 
   function connect() {
@@ -163,6 +166,12 @@
     }
   }
 
+  window.addEventListener('angleros:send-gcode', (e) => {
+    const detail = e.detail || {};
+    const line = String(detail.line || '').trim();
+    if (line) send(line, !!detail.silent);
+  });
+
   // ---- Console log ----
   function appendLog(text, cls) {
     const atBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 40;
@@ -176,6 +185,7 @@
 
   function handleLine(line) {
     parseTemps(line);
+    window.dispatchEvent(new CustomEvent('angleros:printer-line', { detail: { line } }));
     if (isTempNoise(line)) return;
     appendLog(line);
   }

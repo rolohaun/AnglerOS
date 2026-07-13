@@ -23,6 +23,8 @@ configuration surface into a focused browser workflow.
   filename, printer link, and print progress.
 - System view with ESP32-S3 CPU, memory, network, and storage metrics.
 - Browser-based AnglerOS installer and GitHub Actions Marlin builds.
+- Optional heated-bed configuration for printers with an unheated build plate.
+- Read, edit, and persist common Marlin runtime settings without recompiling.
 
 ## Hardware
 

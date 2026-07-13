@@ -933,6 +933,90 @@ select { cursor: pointer; }
   font: 13px ui-monospace, "Cascadia Code", Menlo, monospace;
 }
 
+/* Runtime Marlin settings */
+.update-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.update-toolbar p { margin: 0; color: var(--muted); }
+.update-actions { display: flex; align-items: center; gap: .6rem; flex-shrink: 0; }
+.update-actions .btn-primary { width: auto; margin: 0; }
+.update-status { min-width: 7rem; color: var(--muted); font-size: .8rem; text-align: right; }
+.update-status.ok { color: var(--success); }
+.update-status.warn { color: var(--warning); }
+.update-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.update-card,
+.update-report {
+  min-width: 0;
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.update-leveling,
+.update-report { grid-column: 1 / -1; }
+.update-card-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .8rem;
+  margin-bottom: .85rem;
+}
+.update-card-title h3 { margin: 0; font-size: 1rem; }
+.update-card-title small { color: var(--accent); font: 11px ui-monospace, "Cascadia Code", Menlo, monospace; }
+.update-card.unsupported { opacity: .58; }
+.update-card.unsupported .update-card-title small { color: var(--muted); }
+.update-fields { display: grid; gap: .7rem; }
+.update-fields.four-col { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.update-fields.three-col { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.update-fields.one-col { grid-template-columns: minmax(0, 1fr); }
+.update-fields.leveling-fields { grid-template-columns: minmax(180px, .7fr) minmax(0, 1fr); }
+.update-fields label { min-width: 0; color: var(--muted); font-size: .78rem; }
+.update-fields label > span { display: block; margin-bottom: .35rem; }
+.update-check {
+  display: flex !important;
+  align-items: center;
+  gap: .55rem;
+  min-height: 42px;
+  padding-top: 1.45rem;
+  color: var(--text) !important;
+}
+.update-check input { width: auto; }
+.update-card > p,
+.mesh-tools > p { margin: .7rem 0; color: var(--muted); font-size: .82rem; }
+.mesh-actions { display: flex; flex-wrap: wrap; gap: .6rem; }
+.mesh-point-editor {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.mesh-point-editor h4 { margin: 0 0 .7rem; }
+.mesh-point-fields { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; }
+.mesh-point-fields button { min-height: 42px; }
+.update-report pre {
+  min-height: 120px;
+  max-height: 320px;
+  margin: 0;
+  padding: .8rem;
+  overflow: auto;
+  color: var(--muted);
+  background: var(--bg-deep);
+  border-radius: var(--radius);
+  font: 12px/1.5 ui-monospace, "Cascadia Code", Menlo, monospace;
+  white-space: pre-wrap;
+}
+
 @media (max-width: 1200px) {
   .system-grid { grid-template-columns: 1fr; }
   .system-metrics,
@@ -944,6 +1028,9 @@ select { cursor: pointer; }
 }
 
 @media (max-width: 1100px) {
+  .update-grid { grid-template-columns: 1fr; }
+  .update-leveling,
+  .update-report { grid-column: auto; }
   .position-strip { grid-template-columns: 1fr; }
   .term-card .card-title > span:first-child {
     flex: 1;
@@ -978,7 +1065,7 @@ select { cursor: pointer; }
   }
   .brand { min-height: 64px; }
   .nav { flex-direction: row; padding: 0; }
-  .nav-item { flex: 1; justify-content: center; }
+  .nav-item { flex: 1; justify-content: center; padding-inline: .45rem; font-size: .78rem; }
   .sidebar-foot { display: none; }
   .topbar {
     min-height: 64px;
@@ -998,6 +1085,14 @@ select { cursor: pointer; }
   .term-input { grid-template-columns: auto minmax(0, 1fr); }
   .term-input .btn-primary { grid-column: 1 / -1; width: 100%; }
   .print-stats { grid-template-columns: repeat(2, 1fr); row-gap: .8rem; }
+  .update-toolbar { align-items: flex-start; flex-direction: column; }
+  .update-actions { width: 100%; flex-wrap: wrap; }
+  .update-status { width: 100%; text-align: left; }
+  .update-fields.four-col,
+  .update-fields.three-col,
+  .update-fields.leveling-fields,
+  .mesh-point-fields { grid-template-columns: 1fr 1fr; }
+  .mesh-point-fields button { grid-column: 1 / -1; }
 }
 
 

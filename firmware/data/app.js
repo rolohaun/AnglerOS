@@ -5,6 +5,7 @@
   const views = {
     dashboard: 'Dashboard',
     configuration: 'Configuration',
+    updates: 'Updates',
     system: 'System',
   };
 

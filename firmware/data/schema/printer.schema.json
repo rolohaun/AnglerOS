@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "note": "Only the settings needed to get a printer running. Marlin identifiers and array assembly are validated against a real build in Phase 2.",
   "thermistors": [
     { "value": "1", "label": "100k EPCOS (1)" },
@@ -82,9 +82,10 @@
       "id": "bed",
       "title": "Heated bed",
       "fields": [
-        { "id": "temp_sensor_bed", "label": "Thermistor", "type": "thermistor", "default": "1", "ini": "TEMP_SENSOR_BED" },
-        { "id": "bed_maxtemp", "label": "Max temperature", "type": "number", "unit": "°C", "default": 120, "ini": "BED_MAXTEMP" },
-        { "id": "bed_pid", "label": "PID control", "type": "switch", "default": false, "help": "Off = bang-bang (typical for beds)." }
+        { "id": "bed_enabled", "label": "Enable heated bed", "type": "switch", "default": true, "help": "Turn this off for an unheated build plate. Marlin will not expect a bed thermistor or drive a bed heater." },
+        { "id": "temp_sensor_bed", "label": "Thermistor", "type": "thermistor", "default": "1", "ini": "TEMP_SENSOR_BED", "when": { "field": "bed_enabled", "equals": true } },
+        { "id": "bed_maxtemp", "label": "Max temperature", "type": "number", "unit": "°C", "default": 120, "ini": "BED_MAXTEMP", "when": { "field": "bed_enabled", "equals": true } },
+        { "id": "bed_pid", "label": "PID control", "type": "switch", "default": false, "help": "Off = bang-bang (typical for beds).", "when": { "field": "bed_enabled", "equals": true } }
       ]
     },
     {

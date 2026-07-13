@@ -41,13 +41,26 @@
   // The Marlin source ref this board builds against.
   function marlinRef() { return board.marlin_ref || marlinTag || 'bugfix-2.1.x'; }
 
+  function conditionApplies(when) {
+    if (!when) return true;
+    if (when.kinematics && !when.kinematics.includes(kinematics())) return false;
+    if (when.field) {
+      const expected = when.equals === undefined ? true : when.equals;
+      if (values[when.field] !== expected) return false;
+    }
+    return true;
+  }
   function fieldApplies(f) {
-    if (!f.when || !f.when.kinematics) return true;
-    return f.when.kinematics.includes(kinematics());
+    return conditionApplies(f.when);
   }
   function groupApplies(g) {
-    if (!g.when || !g.when.kinematics) return true;
-    return g.when.kinematics.includes(kinematics());
+    return conditionApplies(g.when);
+  }
+
+  function hasConditionalDependents(id) {
+    return schema.groups.some((g) =>
+      (g.when && g.when.field === id)
+      || g.fields.some((f) => f.when && f.when.field === id));
   }
 
   // ---- Rendering ----
@@ -129,6 +142,10 @@
         } else {
           values[id] = el.value;
         }
+        if (hasConditionalDependents(id)) {
+          render();
+          return;
+        }
         regenerate();
       });
     });
@@ -191,6 +208,15 @@
     lines.push('PSU_CONTROL = off');
     lines.push('');
 
+    // The Updates tab uses M503 to read active runtime settings and M500 to
+    // persist edits. Keep both commands and EEPROM feedback enabled.
+    lines.push('# Runtime settings storage');
+    lines.push('EEPROM_SETTINGS = on');
+    lines.push('EEPROM_CHITCHAT = on');
+    lines.push('DISABLE_M503 = off');
+    if (board.eeprom_emulation) lines.push(`${board.eeprom_emulation} = on`);
+    lines.push('');
+
     // Motion arrays assembled from the per-axis fields.
     let sx, sy, sz, fx, fy, fz, ax, ay, az;
     if (kin === 'delta') {
@@ -230,6 +256,12 @@
     // Scalar fields declared with an `ini` key, grouped by their schema group.
     for (const g of schema.groups) {
       if (!groupApplies(g)) continue;
+      if (g.id === 'bed' && !values.bed_enabled) {
+        lines.push('# Heated bed (disabled)');
+        lines.push('TEMP_SENSOR_BED = 0');
+        lines.push('');
+        continue;
+      }
       const scalars = g.fields.filter((f) => fieldApplies(f) && f.ini && f.type !== 'vector3');
       const vecs = g.fields.filter((f) => fieldApplies(f) && f.ini && f.type === 'vector3');
       if (!scalars.length && !vecs.length) continue;
@@ -242,7 +274,7 @@
     // Feature switches that aren't a simple ini= mapping.
     lines.push('# Temperature control');
     lines.push(`PIDTEMP = ${values.hotend_pid ? 'on' : 'off'}`);
-    lines.push(`PIDTEMPBED = ${values.bed_pid ? 'on' : 'off'}`);
+    lines.push(`PIDTEMPBED = ${values.bed_enabled && values.bed_pid ? 'on' : 'off'}`);
 
     return lines.join('\n') + '\n';
   }

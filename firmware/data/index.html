@@ -21,6 +21,9 @@
         <button class="nav-item" data-view="configuration">
           <span class="nav-ico">C</span> Configuration
         </button>
+        <button class="nav-item" data-view="updates">
+          <span class="nav-ico">U</span> Updates
+        </button>
         <button class="nav-item" data-view="system">
           <span class="nav-ico">S</span> System
         </button>
@@ -220,6 +223,112 @@
         </div>
       </section>
 
+      <section class="view" id="view-updates">
+        <div class="update-toolbar">
+          <div>
+            <strong>Runtime Marlin settings</strong>
+            <p>Read active values from Marlin, edit them, then save them to EEPROM without recompiling.</p>
+          </div>
+          <div class="update-actions">
+            <button id="update-read" class="btn-secondary" type="button" disabled>Read from Marlin</button>
+            <button id="update-save" class="btn-primary" type="button" disabled>Save changes (M500)</button>
+          </div>
+          <small id="update-status" class="muted">Waiting for a printer connection.</small>
+        </div>
+
+        <div class="update-grid">
+          <section class="update-card" data-setting="m92">
+            <div class="update-card-title"><span>Steps per millimeter</span><small data-support-for="m92">Read printer first</small></div>
+            <div class="update-fields four-col">
+              <label for="update-steps-x">X <span>steps/mm</span><input id="update-steps-x" type="number" step="any" min="0" /></label>
+              <label for="update-steps-y">Y <span>steps/mm</span><input id="update-steps-y" type="number" step="any" min="0" /></label>
+              <label for="update-steps-z">Z <span>steps/mm</span><input id="update-steps-z" type="number" step="any" min="0" /></label>
+              <label for="update-steps-e">E <span>steps/mm</span><input id="update-steps-e" type="number" step="any" min="0" /></label>
+            </div>
+            <p>M92 · Calibrates axis and extruder movement.</p>
+          </section>
+
+          <section class="update-card" data-setting="m301">
+            <div class="update-card-title"><span>Hotend PID</span><small data-support-for="m301">Read printer first</small></div>
+            <div class="update-fields three-col">
+              <label for="update-hotend-p">P<input id="update-hotend-p" type="number" step="any" /></label>
+              <label for="update-hotend-i">I<input id="update-hotend-i" type="number" step="any" /></label>
+              <label for="update-hotend-d">D<input id="update-hotend-d" type="number" step="any" /></label>
+            </div>
+            <p>M301 · Active hotend temperature-control values.</p>
+          </section>
+
+          <section class="update-card" data-setting="m304">
+            <div class="update-card-title"><span>Heated-bed PID</span><small data-support-for="m304">Read printer first</small></div>
+            <div class="update-fields three-col">
+              <label for="update-bed-p">P<input id="update-bed-p" type="number" step="any" /></label>
+              <label for="update-bed-i">I<input id="update-bed-i" type="number" step="any" /></label>
+              <label for="update-bed-d">D<input id="update-bed-d" type="number" step="any" /></label>
+            </div>
+            <p>M304 · Only available when Marlin reports bed PID support.</p>
+          </section>
+
+          <section class="update-card" data-setting="m851">
+            <div class="update-card-title"><span>Probe and Z offset</span><small data-support-for="m851">Read printer first</small></div>
+            <div class="update-fields three-col">
+              <label for="update-probe-x">X <span>mm</span><input id="update-probe-x" type="number" step="any" /></label>
+              <label for="update-probe-y">Y <span>mm</span><input id="update-probe-y" type="number" step="any" /></label>
+              <label for="update-probe-z">Z offset <span>mm</span><input id="update-probe-z" type="number" step="any" /></label>
+            </div>
+            <p>M851 · Nozzle-to-probe XYZ distance; Z controls the nozzle gap.</p>
+          </section>
+
+          <section class="update-card" data-setting="m900">
+            <div class="update-card-title"><span>Linear Advance</span><small data-support-for="m900">Read printer first</small></div>
+            <div class="update-fields one-col">
+              <label for="update-linear-k">K factor<input id="update-linear-k" type="number" step="any" min="0" /></label>
+            </div>
+            <p>M900 · Set K to 0 to disable Linear Advance.</p>
+          </section>
+
+          <section class="update-card" data-setting="m906">
+            <div class="update-card-title"><span>Stepper motor current</span><small data-support-for="m906">Read printer first</small></div>
+            <div class="update-fields four-col">
+              <label for="update-current-x">X <span>mA</span><input id="update-current-x" type="number" step="1" min="0" /></label>
+              <label for="update-current-y">Y <span>mA</span><input id="update-current-y" type="number" step="1" min="0" /></label>
+              <label for="update-current-z">Z <span>mA</span><input id="update-current-z" type="number" step="1" min="0" /></label>
+              <label for="update-current-e">E0 <span>mA</span><input id="update-current-e" type="number" step="1" min="0" /></label>
+            </div>
+            <p>M906 · Available for supported programmable stepper drivers.</p>
+          </section>
+
+          <section class="update-card update-leveling" data-setting="m420">
+            <div class="update-card-title"><span>Bed leveling and mesh</span><small data-support-for="m420">Read printer first</small></div>
+            <div class="update-fields leveling-fields">
+              <label class="update-check" for="update-leveling-enabled">
+                <input id="update-leveling-enabled" type="checkbox" /> Enable leveling
+              </label>
+              <label for="update-leveling-fade">Fade height <span>mm</span><input id="update-leveling-fade" type="number" step="any" min="0" /></label>
+            </div>
+            <div class="mesh-actions">
+              <button id="update-mesh-read" class="btn-secondary" type="button" disabled>Refresh mesh report</button>
+              <button id="update-mesh-rebuild" class="btn-secondary" type="button" disabled>Home and rebuild mesh</button>
+            </div>
+            <div class="mesh-point-editor">
+              <strong>Set one mesh point</strong>
+              <div class="update-fields mesh-point-fields">
+                <label for="update-mesh-i">X index (I)<input id="update-mesh-i" type="number" step="1" min="0" value="0" /></label>
+                <label for="update-mesh-j">Y index (J)<input id="update-mesh-j" type="number" step="1" min="0" value="0" /></label>
+                <label for="update-mesh-z">New Z <span>mm</span><input id="update-mesh-z" type="number" step="any" value="0" /></label>
+                <button id="update-mesh-point-save" class="btn-secondary" type="button" disabled>Set point and store</button>
+              </div>
+              <small>M421 I/J/Z · For mesh-based leveling. Use small changes to avoid nozzle collisions.</small>
+            </div>
+            <p>M420 controls leveling state and fade. Rebuild runs G28, G29, then M500.</p>
+          </section>
+
+          <details class="update-report" open>
+            <summary>Marlin read report</summary>
+            <pre id="update-report">No settings read yet.</pre>
+          </details>
+        </div>
+      </section>
+
       <section class="view" id="view-system">
         <div class="system-grid">
           <section class="system-panel system-metrics">
@@ -405,8 +514,10 @@
     </form>
   </div>
 
+  <script src="/marlin_settings.js"></script>
   <script src="/app.js"></script>
   <script src="/config.js"></script>
   <script src="/dashboard.js"></script>
+  <script src="/update.js"></script>
 </body>
 </html>
