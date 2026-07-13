@@ -6,6 +6,7 @@
 #include "flash_led.h"
 #include "gcode_store.h"
 #include "print_job.h"
+#include "printer_state.h"
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -48,10 +49,16 @@ static void handleStatus(AsyncWebServerRequest *req) {
   doc["sd_used"] = storageSdUsed();
   doc["sd_total"] = storageSdTotal();
   doc["flash_brightness"] = flashLedBrightness();
+  doc["temperatures_valid"] = printerStateTemperaturesValid();
+  doc["hotend_current"] = printerStateHotendCurrent();
+  doc["hotend_target"] = printerStateHotendTarget();
+  doc["bed_current"] = printerStateBedCurrent();
+  doc["bed_target"] = printerStateBedTarget();
 
   JsonObject pj = doc["print"].to<JsonObject>();
   pj["state"] = printJobState();
   pj["file"] = printJobFile();
+  pj["command"] = printJobCurrentCommand();
   pj["progress"] = printJobProgress();
   pj["elapsed"] = printJobElapsedSec();
   pj["bytes_sent"] = printJobBytesSent();

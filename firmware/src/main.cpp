@@ -17,6 +17,8 @@
 #include "flash_led.h"
 #include "gcode_store.h"
 #include "print_job.h"
+#include "printer_state.h"
+#include "display.h"
 
 static const char *FW_VERSION = "0.1.0-dev";
 static const char *AP_SSID = "AnglerOS-Setup";
@@ -42,6 +44,7 @@ void setup() {
   Serial.begin(115200);
   systemMetricsBegin();
   flashLedBegin();
+  displayBegin();
   delay(200);
   Serial.printf("\nAnglerOS %s booting...\n", FW_VERSION);
 
@@ -90,8 +93,10 @@ void setup() {
 void loop() {
   systemMetricsTick();
   storageMetricsTick();
+  printerStateTick();
   printerLinkPump();
   printJobPump();
+  displayTick();
 
   if (webServerPendingRestart()) {
     Serial.println("[wifi] credentials saved, rebooting...");

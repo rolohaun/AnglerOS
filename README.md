@@ -18,6 +18,8 @@ configuration surface into a focused browser workflow.
 - Fast direct-to-card G-code uploads through the T-Dongle's 4-bit SDMMC slot.
 - USB-OTG CDC host and QWIIC UART printer links.
 - Onboard APA102 printer-light brightness control.
+- Onboard 160x80 status screen with IP address, temperatures, active command,
+  filename, printer link, and print progress.
 - System view with ESP32-S3 CPU, memory, network, and storage metrics.
 - Browser-based AnglerOS installer and GitHub Actions Marlin builds.
 

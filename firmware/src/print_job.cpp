@@ -7,6 +7,7 @@ enum class JobState { Idle, Printing, Paused, Done, Cancelled, Error };
 static JobState s_state = JobState::Idle;
 static File s_file;
 static String s_name;
+static String s_currentCommand;
 static uint64_t s_total = 0, s_read = 0;
 static uint32_t s_startMs = 0, s_endMs = 0;
 
@@ -33,6 +34,7 @@ bool printJobStart(const String &name) {
   s_name = gcodeSanitizeName(name);
   s_total = f.size();
   s_read = 0;
+  s_currentCommand = "";
   s_pending = 0;
   s_startMs = millis();
   s_endMs = 0;
@@ -61,6 +63,7 @@ static void finish(JobState end) {
   s_state = end;
   s_endMs = millis();
   s_pending = 0;
+  s_currentCommand = "";
 }
 
 void printJobCancel() {
@@ -111,6 +114,7 @@ void printJobPump() {
     line.trim();
     if (!line.length() || line.length() > 200) continue;
 
+    s_currentCommand = line;
     sendCmd(line);
     return;
   }
@@ -132,6 +136,7 @@ bool printJobActive() {
 }
 
 String printJobFile() { return s_name; }
+String printJobCurrentCommand() { return s_currentCommand; }
 
 uint8_t printJobProgress() {
   if (!s_total) return 0;

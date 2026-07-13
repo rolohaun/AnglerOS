@@ -64,6 +64,26 @@ The dashboard Printer Light card drives the onboard APA102 as white with
 adjustable brightness. Data is GPIO 40, clock is GPIO 39, and the light boots
 off.
 
+## Onboard display
+
+The 160x80 ST7735 display uses a black background and shows the current Wi-Fi
+IP, hotend and bed temperatures, print state, filename, current G-code command,
+active printer link, and a progress bar. While AnglerOS is in setup mode it
+shows `192.168.4.1`; after joining Wi-Fi it changes to the assigned LAN address.
+
+| Display signal | GPIO |
+|----------------|------|
+| MOSI | 3 |
+| Clock | 5 |
+| CS | 4 |
+| DC | 2 |
+| Reset | 1 |
+| Backlight (active-low) | 38 |
+
+The display redraws only changed rows. Temperature polling uses `M105` while
+idle and relies on the print job's existing `M155` auto-reports while printing,
+so screen updates do not add acknowledgements to the G-code stream.
+
 ## Flashing AnglerOS
 
 Use the [browser flasher](../pages/) in Chrome or Edge. Hold **BOOT** while

@@ -19,6 +19,7 @@ void printJobHandlePrinterLine(const String &line);
 const char *printJobState();
 bool printJobActive();  // printing or paused
 String printJobFile();
+String printJobCurrentCommand();
 uint8_t printJobProgress();       // 0-100 (by bytes)
 uint32_t printJobElapsedSec();
 uint64_t printJobBytesSent();
