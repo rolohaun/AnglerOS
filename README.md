@@ -38,6 +38,9 @@ LED details.
 See [OrcaSlicer setup](docs/orcaslicer.md) to send sliced G-code straight to
 AnglerOS over the local network.
 
+[Open the AnglerOS browser installer](https://rolohaun.github.io/AnglerOS/)
+in Chrome or Edge to flash the latest build.
+
 ## Repository layout
 
 ```text
